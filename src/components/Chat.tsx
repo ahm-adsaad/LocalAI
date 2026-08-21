@@ -70,7 +70,7 @@ export function Chat({
             </button>
           ) : null}
           <span className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
-            {activity ?? 'retrieve → generate · on device'}
+            {activity ?? 'hybrid retrieve → generate · on device'}
           </span>
         </div>
       </div>

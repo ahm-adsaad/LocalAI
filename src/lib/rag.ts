@@ -1,6 +1,10 @@
-import type { RankedChunk, StoredChunk } from './types'
-import { TOP_K, TOP_K_OVERVIEW } from './types'
+import type { RankedChunk, ScoredChunkId, StoredChunk } from './types'
+import { HYBRID_CANDIDATE_POOL, TOP_K, TOP_K_OVERVIEW } from './types'
 import { proseDensity } from './chunking'
+import { bm25Scores } from './bm25'
+
+/** RRF constant — standard Okapi/hybrid literature default. */
+const RRF_K = 60
 
 /**
  * Broad / meta questions ("what's this about?") barely match MiniLM embeddings of
@@ -16,6 +20,69 @@ export function isOverviewQuery(question: string): boolean {
     /^what\s+is\s+this\b/.test(q) ||
     /^whats?\s+this\b/.test(q)
   )
+}
+
+function toRanked(chunk: StoredChunk, score: number): RankedChunk {
+  return {
+    id: chunk.id,
+    documentId: chunk.documentId,
+    documentName: chunk.documentName,
+    text: chunk.text,
+    score,
+  }
+}
+
+/**
+ * Fuse MiniLM cosine ranks with BM25 keyword ranks via Reciprocal Rank Fusion.
+ * Cosine uses the (possibly expanded) embedding query upstream; BM25 uses the
+ * raw user question so overview fluff does not pollute exact-term matching.
+ */
+export function hybridRank(
+  question: string,
+  allChunks: StoredChunk[],
+  cosineHits: ScoredChunkId[],
+): RankedChunk[] {
+  if (allChunks.length === 0) return []
+
+  const byId = new Map(allChunks.map((c) => [c.id, c]))
+
+  // Dense ranks (already sorted descending by cosine).
+  const denseRank = new Map<string, number>()
+  cosineHits.forEach((hit, i) => denseRank.set(hit.id, i + 1))
+
+  // Sparse ranks from BM25 over full library text (main thread — texts stay local).
+  const sparse = bm25Scores(
+    question,
+    allChunks.map((c) => ({ id: c.id, text: c.text })),
+  )
+  const sparseSorted = [...sparse.entries()]
+    .filter(([, s]) => s > 0)
+    .sort((a, b) => b[1] - a[1])
+  const sparseRank = new Map<string, number>()
+  sparseSorted.forEach(([id], i) => sparseRank.set(id, i + 1))
+
+  const cosineById = new Map(cosineHits.map((h) => [h.id, h.score]))
+  const ids = new Set<string>([...denseRank.keys(), ...sparseRank.keys()])
+
+  const fused: Array<{ chunk: StoredChunk; rrf: number; display: number }> = []
+  for (const id of ids) {
+    const chunk = byId.get(id)
+    if (!chunk) continue
+    const rDense = denseRank.get(id)
+    const rSparse = sparseRank.get(id)
+    let rrf = 0
+    if (rDense != null) rrf += 1 / (RRF_K + rDense)
+    if (rSparse != null) rrf += 1 / (RRF_K + rSparse)
+
+    const cosine = cosineById.get(id)
+    const bm25 = sparse.get(id) ?? 0
+    const display = cosine != null ? cosine : Math.min(0.99, bm25 / (bm25 + 1))
+    fused.push({ chunk, rrf, display })
+  }
+
+  fused.sort((a, b) => b.rrf - a.rrf || b.display - a.display)
+
+  return fused.slice(0, HYBRID_CANDIDATE_POOL).map(({ chunk, display }) => toRanked(chunk, display))
 }
 
 /**
@@ -63,7 +130,7 @@ export function selectRagSources(
     }
   }
 
-  // Soft-rerank cosine hits: blend similarity with prose density.
+  // Soft-rerank fused hits: blend similarity with prose density.
   const reranked = ranked
     .slice()
     .sort(

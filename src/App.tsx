@@ -35,9 +35,9 @@ import {
 } from './lib/models'
 import { extractPdfText } from './lib/pdf'
 import { buildPlainChatMessages, buildRagMessages } from './lib/prompt'
-import { embeddingQueryFor, selectRagSources } from './lib/rag'
+import { embeddingQueryFor, hybridRank, selectRagSources } from './lib/rag'
 import type { ChatSession, ChatTurn, DocumentMeta, RankedChunk, StoredChunk } from './lib/types'
-import { TOP_K_OVERVIEW } from './lib/types'
+import { HYBRID_CANDIDATE_POOL } from './lib/types'
 import { checkWebGPU, type WebGPUStatus } from './lib/webgpu'
 import { getWorkerClient } from './lib/workerClient'
 
@@ -448,25 +448,14 @@ export default function App() {
       // RAG only over PDFs attached to this chat.
       if (chunks.length > 0) {
         setActivity('Retrieving…')
-        const byId = new Map(chunks.map((c) => [c.id, c]))
+        const pool = Math.min(HYBRID_CANDIDATE_POOL, chunks.length)
         const scored = await worker.search(
           embeddingQueryFor(text),
           chunks.map((c) => ({ id: c.id, embedding: c.embedding })),
-          TOP_K_OVERVIEW,
+          pool,
         )
-        const ranked: RankedChunk[] = scored.flatMap((s) => {
-          const c = byId.get(s.id)
-          if (!c) return []
-          return [
-            {
-              id: c.id,
-              documentId: c.documentId,
-              documentName: c.documentName,
-              text: c.text,
-              score: s.score,
-            },
-          ]
-        })
+        // Cosine (worker) + BM25 (main thread) → RRF fuse → prose/overview select.
+        const ranked = hybridRank(text, chunks, scored)
         sources = selectRagSources(text, chunks, ranked)
         messages = buildRagMessages(text, sources)
       } else {

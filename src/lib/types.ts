@@ -99,6 +99,11 @@ export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2'
 export const TOP_K = 3
 /** Overview still stays small — long prompts dominate WebGPU prefill time. */
 export const TOP_K_OVERVIEW = 4
+/**
+ * How many cosine hits to pull before fusing with BM25.
+ * Wider pool → better hybrid recall; still cheap at browser library sizes.
+ */
+export const HYBRID_CANDIDATE_POOL = 24
 /** Cap each excerpt in the LLM prompt (full text stays in IndexedDB / UI). */
 export const EXCERPT_MAX_CHARS = 360
 /** Decode budget: enough for a short prose answer without endless dumping. */

@@ -39,16 +39,21 @@ VRAM. Vectors are persisted in IndexedDB with chunk text so a refresh skips re-e
 
 ## Vector search
 
-Brute-force cosine over stored embeddings in the worker. No external vector DB.
+Hybrid retrieval in the browser — no external vector DB:
+
+1. **Dense:** brute-force cosine over MiniLM embeddings in the worker.
+2. **Sparse:** Okapi BM25 over chunk text on the main thread (exact names / codes).
+3. **Fuse:** Reciprocal Rank Fusion (RRF), then prose-density + overview pin logic.
+
 Fine for hundreds/thousands of chunks; revisit only if library size becomes the
 bottleneck.
 
 **Overview queries** ("what's this about?"): MiniLM cosine often returns weak
 mid-doc metric/UI scraps (~0.15–0.25). We detect those intents, expand the
-embedding query toward "summary/intro", and pin the first chunks of each PDF
-into the prompt so the 1B model sees titles/headings instead of click-tracking
-noise. Prompt text also forbids "document not provided" refusals — excerpts ARE
-the document.
+*embedding* query toward "summary/intro" (BM25 still uses the raw question),
+and pin the first chunks of each PDF into the prompt so the model sees
+titles/headings instead of click-tracking noise. Prompt text also forbids
+"document not provided" refusals — excerpts ARE the document.
 
 ## Speed (browser WebGPU reality)
 
