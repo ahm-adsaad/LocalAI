@@ -28,12 +28,13 @@ expandable source chunks.
 | Piece | Choice |
 | --- | --- |
 | UI | Vite + React + TypeScript + Tailwind |
-| LLM | `@mlc-ai/web-llm` — `Llama-3.2-1B-Instruct-q4f16_1-MLC` |
+| LLM | `@mlc-ai/web-llm` — Qwen 2.5 / Phi-4 mini / Llama 3.2 (Q4f16), user-selectable |
+| Default model | `Qwen2.5-1.5B-Instruct-q4f16_1-MLC` (VRAM-aware recommendation) |
 | Embeddings | `@huggingface/transformers` — `Xenova/all-MiniLM-L6-v2` |
 | PDF | `pdfjs-dist` |
 | Persistence | IndexedDB via `idb` |
 
-See [NOTES.md](./NOTES.md) for on-device design decisions.
+See [NOTES.md](./NOTES.md) for on-device design decisions and the full model matrix.
 
 ## Phases
 

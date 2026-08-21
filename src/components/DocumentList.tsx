@@ -5,18 +5,37 @@ interface DocumentListProps {
   busy: boolean
   onUpload: (file: File) => void
   onDelete: (id: string) => void
+  onClearLibrary?: () => void
 }
 
-export function DocumentList({ documents, busy, onUpload, onDelete }: DocumentListProps) {
+export function DocumentList({
+  documents,
+  busy,
+  onUpload,
+  onDelete,
+  onClearLibrary,
+}: DocumentListProps) {
   return (
     <section className="flex shrink-0 flex-col">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="font-[family-name:var(--font-display)] text-base text-[var(--color-fg)]">
           PDFs
         </h2>
-        <span className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
-          this chat only
-        </span>
+        <div className="flex items-center gap-2">
+          {documents.length > 0 && onClearLibrary ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onClearLibrary}
+              className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)] hover:text-[var(--color-danger)] disabled:opacity-40"
+            >
+              Clear all
+            </button>
+          ) : null}
+          <span className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
+            this chat only
+          </span>
+        </div>
       </div>
 
       <label

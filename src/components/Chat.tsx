@@ -10,6 +10,7 @@ interface ChatProps {
   placeholder?: string
   onSend: (text: string) => void
   onStop?: () => void
+  onExport?: () => void
   generating?: boolean
   activity?: string | null
   title?: string
@@ -21,6 +22,7 @@ export function Chat({
   placeholder = 'Ask about your documents…',
   onSend,
   onStop,
+  onExport,
   generating,
   activity,
   title,
@@ -56,9 +58,21 @@ export function Chat({
             </p>
           ) : null}
         </div>
-        <span className="shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
-          {activity ?? 'retrieve → generate · on device'}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {onExport && turns.some((t) => !t.streaming && t.content.trim()) ? (
+            <button
+              type="button"
+              disabled={generating}
+              onClick={onExport}
+              className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-accent)] hover:underline disabled:opacity-40"
+            >
+              Export
+            </button>
+          ) : null}
+          <span className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
+            {activity ?? 'retrieve → generate · on device'}
+          </span>
+        </div>
       </div>
 
       <div

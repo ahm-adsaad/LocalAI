@@ -134,6 +134,15 @@ export async function deleteDocument(documentId: string): Promise<void> {
   await tx.done
 }
 
+/** Remove every PDF and chunk attached to a chat; leave the chat thread intact. */
+export async function clearChatLibrary(chatId: string): Promise<number> {
+  const docs = await listDocumentsForChat(chatId)
+  for (const doc of docs) {
+    await deleteDocument(doc.id)
+  }
+  return docs.length
+}
+
 /** Remove a chat and every PDF/chunk that belonged only to it. */
 export async function deleteChatCascade(chatId: string): Promise<void> {
   const docs = await listDocumentsForChat(chatId)

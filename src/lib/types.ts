@@ -91,12 +91,7 @@ export type WorkerEvent =
   | { id: string; type: 'aborted' }
 
 /**
- * @deprecated Prefer MODEL_TIERS from ./models — kept as the Balanced default id.
- */
-export const LLM_MODEL_ID = 'Llama-3.2-1B-Instruct-q4f16_1-MLC'
-
-/**
- * Small sentence embedding model for RAG. ONNX build runs via Transformers.js
+ * Small sentence embedding model for RAG. ONNX build via Transformers.js
  * entirely in the worker — never sent to a server.
  */
 export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2'

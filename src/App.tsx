@@ -8,6 +8,7 @@ import { WebGPUGate } from './components/WebGPUGate'
 import { chunkText } from './lib/chunking'
 import {
   adoptOrphanDocuments,
+  clearChatLibrary,
   countDocumentsByChat,
   deleteChatCascade,
   deleteDocument,
@@ -24,6 +25,7 @@ import {
   titleFromDocumentName,
   titleFromTurns,
 } from './lib/db'
+import { downloadChatMarkdown } from './lib/exportChat'
 import {
   DEFAULT_MODEL,
   MODEL_OPTIONS,
@@ -338,6 +340,27 @@ export default function App() {
     await refreshChats()
   }
 
+  async function handleClearLibrary() {
+    const chatId = sessionRef.current.id
+    const n = documents.length
+    if (n === 0) return
+    if (
+      !window.confirm(
+        `Remove all ${n} PDF${n === 1 ? '' : 's'} from this chat? Chat messages stay; re-upload to ask grounded questions again.`,
+      )
+    ) {
+      return
+    }
+    await clearChatLibrary(chatId)
+    await loadChatLibrary(chatId)
+    await refreshChats()
+    setIngestMsg('Cleared this chat’s PDF library.')
+  }
+
+  function handleExportChat() {
+    downloadChatMarkdown(sessionRef.current)
+  }
+
   async function handleNewChat() {
     if (generating) worker.abort()
     const fresh = newSession()
@@ -558,6 +581,7 @@ export default function App() {
             busy={ingestBusy || !modelsReady}
             onUpload={handleUpload}
             onDelete={handleDeleteDoc}
+            onClearLibrary={handleClearLibrary}
           />
           {ingestMsg ? (
             <p className="mt-2 shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
@@ -584,6 +608,7 @@ export default function App() {
             activity={activity}
             onSend={handleSend}
             onStop={() => worker.abort()}
+            onExport={handleExportChat}
             placeholder={
               modelsReady
                 ? documents.length > 0
