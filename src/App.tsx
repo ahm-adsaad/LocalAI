@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Chat } from './components/Chat'
-import { ChatList } from './components/ChatList'
-import { DocumentList } from './components/DocumentList'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { ConfirmDialog } from './components/ConfirmDialog'
+import { IconFileText, Logo } from './components/Icons'
+import { Messages } from './components/Messages'
+import { Navbar } from './components/Navbar'
 import { ProgressBar } from './components/ProgressBar'
-import { StatusBar, type ModelPhase } from './components/StatusBar'
+import { PromptInput } from './components/PromptInput'
+import { Sidebar } from './components/Sidebar'
 import { WebGPUGate } from './components/WebGPUGate'
 import { chunkText } from './lib/chunking'
 import {
@@ -36,7 +38,14 @@ import {
 import { extractPdfText } from './lib/pdf'
 import { buildPlainChatMessages, buildRagMessages } from './lib/prompt'
 import { embeddingQueryFor, hybridRank, selectRagSources } from './lib/rag'
-import type { ChatSession, ChatTurn, DocumentMeta, RankedChunk, StoredChunk } from './lib/types'
+import type {
+  ChatSession,
+  ChatTurn,
+  DocumentMeta,
+  ModelPhase,
+  RankedChunk,
+  StoredChunk,
+} from './lib/types'
 import { HYBRID_CANDIDATE_POOL } from './lib/types'
 import { checkWebGPU, type WebGPUStatus } from './lib/webgpu'
 import { getWorkerClient } from './lib/workerClient'
@@ -61,6 +70,20 @@ function newSession(): ChatSession {
   }
 }
 
+const SIDEBAR_KEY = 'localai-sidebar'
+
+function initialSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== 'closed'
+  } catch {
+    return true
+  }
+}
+
+type PendingConfirm =
+  | { kind: 'delete-chat'; chat: ChatSession }
+  | { kind: 'clear-library'; count: number }
+
 export default function App() {
   const [gpu, setGpu] = useState<WebGPUStatus | null>(null)
   const [phase, setPhase] = useState<ModelPhase>('idle')
@@ -81,6 +104,12 @@ export default function App() {
   const [session, setSession] = useState<ChatSession>(() => newSession())
   const [generating, setGenerating] = useState(false)
   const [activity, setActivity] = useState<string | null>(null)
+
+  const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const dragDepth = useRef(0)
 
   const sessionRef = useRef(session)
   sessionRef.current = session
@@ -334,23 +363,14 @@ export default function App() {
     }
   }
 
-  async function handleDeleteDoc(id: string) {
-    await deleteDocument(id)
+  async function handleDeleteDoc(doc: DocumentMeta) {
+    await deleteDocument(doc.id)
     await loadChatLibrary(sessionRef.current.id)
     await refreshChats()
   }
 
-  async function handleClearLibrary() {
+  async function handleClearLibraryConfirmed() {
     const chatId = sessionRef.current.id
-    const n = documents.length
-    if (n === 0) return
-    if (
-      !window.confirm(
-        `Remove all ${n} PDF${n === 1 ? '' : 's'} from this chat? Chat messages stay; re-upload to ask grounded questions again.`,
-      )
-    ) {
-      return
-    }
     await clearChatLibrary(chatId)
     await loadChatLibrary(chatId)
     await refreshChats()
@@ -361,7 +381,7 @@ export default function App() {
     downloadChatMarkdown(sessionRef.current)
   }
 
-  async function handleNewChat() {
+  const handleNewChat = useCallback(async () => {
     if (generating) worker.abort()
     const fresh = newSession()
     await saveChat(fresh)
@@ -371,9 +391,22 @@ export default function App() {
     setChunks([])
     setIngestMsg(null)
     await refreshChats()
-  }
+  }, [generating, worker, refreshChats])
+
+  // ⌘⇧O / Ctrl+Shift+O starts a new chat, like the template.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault()
+        void handleNewChat()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleNewChat])
 
   async function handleSelectChat(id: string) {
+    setMobileSidebarOpen(false)
     if (id === session.id) return
     if (generating) worker.abort()
     const existing = await getChat(id)
@@ -384,7 +417,7 @@ export default function App() {
     await loadChatLibrary(id)
   }
 
-  async function handleDeleteChat(id: string) {
+  async function handleDeleteChatConfirmed(id: string) {
     if (generating && id === session.id) worker.abort()
     await deleteChatCascade(id)
     const remaining = await listChats()
@@ -517,9 +550,59 @@ export default function App() {
     }
   }
 
+  function toggleSidebar() {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      setSidebarOpen((open) => {
+        try {
+          localStorage.setItem(SIDEBAR_KEY, open ? 'closed' : 'open')
+        } catch {
+          // Persistence is best-effort.
+        }
+        return !open
+      })
+    } else {
+      setMobileSidebarOpen((open) => !open)
+    }
+  }
+
+  const modelsReady = phase === 'ready'
+  const chatBusy = generating || ingestBusy
+
+  function onDragEnter(e: DragEvent) {
+    if (!modelsReady || ingestBusy) return
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    dragDepth.current += 1
+    setDragActive(true)
+  }
+
+  function onDragOver(e: DragEvent) {
+    if (!dragActive) return
+    e.preventDefault()
+  }
+
+  function onDragLeave(e: DragEvent) {
+    if (!dragActive) return
+    e.preventDefault()
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragActive(false)
+  }
+
+  function onDrop(e: DragEvent) {
+    if (!dragActive) return
+    e.preventDefault()
+    dragDepth.current = 0
+    setDragActive(false)
+    const file = Array.from(e.dataTransfer.files).find(
+      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+    )
+    if (file) void handleUpload(file)
+    else setIngestMsg('Only PDF files can be added to a chat.')
+  }
+
   if (!gpu) {
     return (
-      <div className="flex h-dvh items-center justify-center text-sm text-[var(--color-muted)]">
+      <div className="flex h-dvh items-center justify-center bg-[var(--ui-bg-muted)] text-sm text-[var(--ui-text-muted)]">
         Checking WebGPU…
       </div>
     )
@@ -529,85 +612,205 @@ export default function App() {
     return <WebGPUGate status={gpu} />
   }
 
-  const modelsReady = phase === 'ready'
-  const chatBusy = generating || ingestBusy
+  const loading = phase === 'loading-llm' || phase === 'loading-embed' || modelSwitching
+  const emptyChat = session.turns.length === 0
+
+  const sidebarStatus = {
+    phase,
+    modelSwitching,
+    adapterName: gpu.adapterName,
+    vramMb: gpu.vramMb,
+    vramKnown: gpu.vramSource === 'adapter-info',
+    modelId: selectedModel,
+    documentCount: documents.length,
+    chunkCount: chunks.length,
+  }
+
+  const sidebar = (
+    <Sidebar
+      chats={chats}
+      activeId={session.id}
+      docCounts={docCounts}
+      busy={chatBusy}
+      status={sidebarStatus}
+      onSelect={handleSelectChat}
+      onNew={handleNewChat}
+      onDelete={(chat) => setPendingConfirm({ kind: 'delete-chat', chat })}
+      onCollapse={toggleSidebar}
+    />
+  )
+
+  const promptInput = (
+    <PromptInput
+      disabled={!modelsReady}
+      generating={generating}
+      onSend={handleSend}
+      onStop={() => worker.abort()}
+      documents={documents}
+      ingestBusy={ingestBusy}
+      onUpload={handleUpload}
+      onDeleteDoc={handleDeleteDoc}
+      onClearLibrary={() =>
+        setPendingConfirm({ kind: 'clear-library', count: documents.length })
+      }
+      modelId={selectedModel}
+      recommendedModel={recommendedModel}
+      vramMb={gpu.vramMb}
+      vramKnown={gpu.vramSource === 'adapter-info'}
+      modelBusy={loading}
+      onModelChange={handleModelChange}
+      placeholder={
+        modelsReady
+          ? documents.length > 0
+            ? 'Ask a question about this chat’s PDFs…'
+            : 'Add a PDF to this chat, or chat without one…'
+          : 'Waiting for models…'
+      }
+    />
+  )
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
-      <StatusBar
-        webgpuOk
-        adapterName={gpu.adapterName}
-        vramMb={gpu.vramMb}
-        vramKnown={gpu.vramSource === 'adapter-info'}
-        phase={phase}
-        progressText={progressText}
-        documentCount={documents.length}
-        chunkCount={chunks.length}
-        modelId={selectedModel}
-        recommendedModel={recommendedModel}
-        modelSwitching={modelSwitching}
-        onModelChange={handleModelChange}
+    <div className="flex h-dvh bg-[var(--ui-bg-muted)]">
+      {/* Desktop sidebar */}
+      {sidebarOpen ? (
+        <aside className="hidden w-64 shrink-0 lg:block">{sidebar}</aside>
+      ) : null}
+
+      {/* Mobile sidebar overlay */}
+      {mobileSidebarOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 w-72 border-r border-[var(--ui-border)] bg-[var(--ui-bg-muted)] shadow-2xl">
+            {sidebar}
+          </aside>
+        </div>
+      ) : null}
+
+      {/* Main panel — the template's ring-bordered rounded content card. */}
+      <div className="flex min-w-0 flex-1 flex-col p-2">
+        <div
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm"
+          onDragEnter={onDragEnter}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
+          <Navbar
+            title={session.title}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={toggleSidebar}
+            canExport={session.turns.some((t) => !t.streaming && t.content.trim())}
+            exportDisabled={generating}
+            onExport={handleExportChat}
+          />
+
+          {loading && !emptyChat ? (
+            <div className="shrink-0 border-b border-[var(--ui-border)] px-4 py-2.5 sm:px-6">
+              <ProgressBar value={progress} label={progressText || 'Loading…'} />
+            </div>
+          ) : null}
+
+          {phase === 'error' ? (
+            <div className="shrink-0 px-4 pt-3 sm:px-6">
+              <p className="mx-auto max-w-3xl rounded-lg border border-[var(--ui-error)]/30 bg-[var(--ui-error)]/5 px-3 py-2.5 text-sm text-[var(--ui-error)]">
+                Failed to load on-device models (no server fallback): {modelError}
+              </p>
+            </div>
+          ) : null}
+
+          {emptyChat ? (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 sm:px-6">
+              <div className="w-full max-w-2xl">
+                <div className="mb-8 text-center">
+                  <Logo size={36} className="mx-auto text-[var(--ui-primary)]" />
+                  <h2 className="mt-4 text-2xl font-semibold text-[var(--ui-text-highlighted)]">
+                    Chat privately with your documents
+                  </h2>
+                  <p className="mt-2 text-sm text-[var(--ui-text-muted)]">
+                    The model and your PDFs stay on this device. Nothing leaves the browser.
+                  </p>
+                </div>
+
+                {loading ? (
+                  <div className="mb-4 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3.5">
+                    <ProgressBar
+                      value={progress}
+                      label={progressText || 'Loading on-device models…'}
+                    />
+                  </div>
+                ) : null}
+
+                {promptInput}
+
+                {ingestMsg ? (
+                  <p className="mt-2 text-center text-xs text-[var(--ui-text-muted)]">
+                    {ingestMsg}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <>
+              <Messages turns={session.turns} activity={activity} />
+              <div className="shrink-0 px-4 pb-3 sm:px-6">
+                <div className="mx-auto w-full max-w-3xl">
+                  {promptInput}
+                  <p className="mt-2 truncate text-center text-[11px] text-[var(--ui-text-dimmed)]">
+                    {ingestMsg ??
+                      'Runs fully on-device via WebGPU. Your documents never leave this browser.'}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {dragActive ? (
+            <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl border-2 border-dashed border-[var(--ui-primary)] bg-[var(--ui-bg)]/80 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-2 text-[var(--ui-primary)]">
+                <IconFileText size={28} />
+                <p className="text-sm font-medium">Drop your PDF to add it to this chat</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={pendingConfirm?.kind === 'delete-chat'}
+        title="Delete chat?"
+        description={
+          pendingConfirm?.kind === 'delete-chat'
+            ? `“${pendingConfirm.chat.title}” and its PDFs will be removed from this device. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete chat"
+        onCancel={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          if (pendingConfirm?.kind === 'delete-chat') {
+            void handleDeleteChatConfirmed(pendingConfirm.chat.id)
+          }
+          setPendingConfirm(null)
+        }}
       />
 
-      {(phase === 'loading-llm' || phase === 'loading-embed') && (
-        <div className="mx-auto w-full max-w-6xl shrink-0 px-4 pt-4 sm:px-6">
-          <ProgressBar value={progress} label={progressText || 'Loading…'} />
-        </div>
-      )}
-
-      {phase === 'error' && (
-        <div className="mx-auto w-full max-w-6xl shrink-0 px-4 pt-4 sm:px-6">
-          <p className="rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-panel)] p-3 text-sm text-[var(--color-danger)]">
-            Failed to load on-device models (no server fallback): {modelError}
-          </p>
-        </div>
-      )}
-
-      <main className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 gap-6 overflow-hidden px-4 py-4 lg:grid-cols-[280px_1fr] sm:px-6">
-        <aside className="flex min-h-0 flex-col overflow-y-auto overscroll-contain lg:overflow-hidden">
-          <DocumentList
-            documents={documents}
-            busy={ingestBusy || !modelsReady}
-            onUpload={handleUpload}
-            onDelete={handleDeleteDoc}
-            onClearLibrary={handleClearLibrary}
-          />
-          {ingestMsg ? (
-            <p className="mt-2 shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[var(--color-muted)]">
-              {ingestMsg}
-            </p>
-          ) : null}
-          <ChatList
-            chats={chats}
-            activeId={session.id}
-            docCounts={docCounts}
-            busy={chatBusy}
-            onSelect={handleSelectChat}
-            onNew={handleNewChat}
-            onDelete={handleDeleteChat}
-          />
-        </aside>
-
-        <div className="min-h-0 min-w-0">
-          <Chat
-            turns={session.turns}
-            title={session.title}
-            disabled={!modelsReady}
-            generating={generating}
-            activity={activity}
-            onSend={handleSend}
-            onStop={() => worker.abort()}
-            onExport={handleExportChat}
-            placeholder={
-              modelsReady
-                ? documents.length > 0
-                  ? 'Ask a question about this chat’s PDFs…'
-                  : 'Add a PDF to this chat, or chat without one…'
-                : 'Waiting for models…'
-            }
-          />
-        </div>
-      </main>
+      <ConfirmDialog
+        open={pendingConfirm?.kind === 'clear-library'}
+        title="Remove all PDFs from this chat?"
+        description={
+          pendingConfirm?.kind === 'clear-library'
+            ? `All ${pendingConfirm.count} PDF${pendingConfirm.count === 1 ? '' : 's'} will be removed. Chat messages stay; re-upload to ask grounded questions again.`
+            : ''
+        }
+        confirmLabel="Remove all"
+        onCancel={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          void handleClearLibraryConfirmed()
+          setPendingConfirm(null)
+        }}
+      />
     </div>
   )
 }

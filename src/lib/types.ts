@@ -62,6 +62,9 @@ export interface InitProgress {
   text: string
 }
 
+/** UI lifecycle for the on-device model boot. */
+export type ModelPhase = 'idle' | 'loading-llm' | 'loading-embed' | 'ready' | 'error'
+
 /* ---------- Worker protocol ---------- */
 
 export type WorkerRequest =
