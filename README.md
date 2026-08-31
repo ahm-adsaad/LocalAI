@@ -1,6 +1,6 @@
 # LocalAI
 
-Local-first confidential document workspace. Drop in PDFs, ask questions — retrieval,
+Local-first confidential document workspace. Drop in PDFs, ask questions: retrieval,
 embeddings, and generation all run in your browser on WebGPU. No server, no API keys,
 no document content leaves the device.
 
