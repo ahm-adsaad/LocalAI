@@ -1,0 +1,42 @@
+# Northwind Analytics — Q3 2025 Business Review
+
+Prepared by the finance team for the board meeting on 21 October 2025. All figures are unaudited and in US dollars unless stated otherwise.
+
+## Executive summary
+
+Northwind Analytics closed the third quarter of 2025 with revenue of $4.82 million, up 23% year over year and 6% over the second quarter. Annual recurring revenue reached $18.9 million. Net revenue retention was 112%, and gross logo churn fell to 1.4% per month from 2.1% a year earlier. The company ended the quarter with 143 employees and $21.3 million in cash, giving roughly 26 months of runway at the current burn rate.
+
+## Revenue
+
+Subscription revenue was $4.31 million, or 89% of total revenue. Professional services contributed $0.51 million. The enterprise segment (customers paying more than $100,000 per year) grew 41% year over year and now represents 57% of ARR. The mid-market segment grew 9%. Self-serve revenue declined 4% as the team deprioritised the free tier.
+
+## Key metrics table
+
+Metric | Q3 2024 | Q2 2025 | Q3 2025
+Revenue | $3.92M | $4.55M | $4.82M
+ARR | $14.1M | $17.6M | $18.9M
+Gross margin | 71% | 74% | 76%
+Net revenue retention | 104% | 109% | 112%
+Monthly logo churn | 2.1% | 1.7% | 1.4%
+Customers | 412 | 487 | 519
+Headcount | 118 | 137 | 143
+
+## Costs and margin
+
+Gross margin improved to 76%, driven by moving inference workloads from a managed vendor to reserved GPU capacity, which cut cost of revenue by $210,000 per quarter. Operating expenses were $5.9 million, of which research and development accounted for $2.7 million, sales and marketing $2.1 million, and general and administrative $1.1 million. Net burn for the quarter was $0.82 million.
+
+## Customers
+
+The company added 32 net new customers, bringing the total to 519. The three largest new logos were Meridian Health Systems, Copperline Logistics, and the City of Brookfield. The largest customer, Atlas Retail Group, accounts for 7% of ARR. No single customer exceeds 10% of ARR.
+
+## Product
+
+The Insight Studio release shipped on 9 September 2025 and is now used by 61% of enterprise accounts. Average time-to-first-dashboard for new customers fell from 11 days to 4 days after the guided onboarding flow launched in August.
+
+## Risks
+
+The main risks for the fourth quarter are the renewal of the Atlas Retail Group contract, which expires on 31 December 2025, and hiring delays in the Dublin engineering office, where four senior roles have been open for more than ninety days. Foreign exchange exposure is limited because 88% of billing is in US dollars.
+
+## Outlook for Q4 2025
+
+Management guides to fourth-quarter revenue between $5.0 million and $5.2 million and expects ARR to exceed $20 million by year end. Planned headcount at 31 December 2025 is 152. The board is asked to approve a $1.5 million increase in the 2026 sales and marketing budget to fund two additional enterprise account executives in Europe.

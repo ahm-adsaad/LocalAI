@@ -7,9 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval:pdfs": "tsx eval/build-pdfs.ts",
+    "eval:retrieval": "tsx eval/retrieval.ts",
+    "preview": "vite preview",
+    "eval:models": "tsx eval/compare.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@fontsource/geist-mono": "^5.3.0",
+    "@fontsource/public-sans": "^5.3.0",
     "@huggingface/transformers": "^4.2.0",
     "@mlc-ai/web-llm": "^0.2.84",
     "idb": "^8.0.3",
@@ -20,14 +29,18 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
+    "pdf-lib": "^1.17.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "vitest": "^5.0.5"
   }
 }

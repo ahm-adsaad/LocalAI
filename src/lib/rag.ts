@@ -29,6 +29,8 @@ function toRanked(chunk: StoredChunk, score: number): RankedChunk {
     documentName: chunk.documentName,
     text: chunk.text,
     score,
+    pageStart: chunk.pageStart,
+    pageEnd: chunk.pageEnd,
   }
 }
 
@@ -119,50 +121,40 @@ export function selectRagSources(
         .sort((a, b) => a.index - b.index)
         .slice(0, 2)
         .forEach((c) =>
-          push({
-            id: c.id,
-            documentId: c.documentId,
-            documentName: c.documentName,
-            text: c.text,
-            score: Math.max(c.index === 0 ? 0.99 : 0.9 - c.index * 0.05, 0.8),
-          }),
+          push(toRanked(c, Math.max(c.index === 0 ? 0.99 : 0.9 - c.index * 0.05, 0.8))),
         )
     }
   }
 
-  // Soft-rerank fused hits: blend similarity with prose density.
-  const reranked = ranked
-    .slice()
-    .sort(
-      (a, b) =>
-        b.score * 0.7 +
-        proseDensity(b.text) * 0.3 -
-        (a.score * 0.7 + proseDensity(a.text) * 0.3),
-    )
+  // Fused (RRF) order is the primary signal. `score` is only a display value
+  // (cosine for dense hits, a squashed BM25 for sparse-only hits) and the two
+  // are not comparable, so we never re-sort by it — the eval showed that
+  // blending it with prose density dropped rank-1 hits out of the top 3.
+  //
+  // Number-soup chunks (dashboard tables) are deferred, not dropped: prose
+  // chunks keep their fused order ahead of them, and the top fused hit is
+  // always kept because for "what was the blood pressure?" the answer *is*
+  // number-heavy.
+  const top = ranked[0]
+  const prose = ranked.filter((r) => r === top || proseDensity(r.text) >= NUMERIC_DENSITY_FLOOR)
+  const numeric = ranked.filter((r) => !prose.includes(r))
 
-  for (const r of reranked) {
+  for (const r of [...prose, ...numeric]) {
     if (selected.length >= budget) break
-    // Skip almost-pure numeric scraps unless we have nothing else.
-    if (proseDensity(r.text) < 0.35 && selected.length > 0) continue
     push(r)
-  }
-
-  // If filters left us short, fill with remaining ranked regardless of density.
-  if (selected.length < Math.min(2, budget)) {
-    for (const r of ranked) {
-      if (selected.length >= budget) break
-      push(r)
-    }
   }
 
   return selected.slice(0, budget)
 }
+
+/** Below this letters-to-characters ratio a chunk is treated as a number dump. */
+const NUMERIC_DENSITY_FLOOR = 0.35
 
 /** Expanded embedding query for overview intents — pulls summary-like chunks. */
 export function embeddingQueryFor(question: string): string {
   if (!isOverviewQuery(question)) return question
   return (
     `${question}. Document overview summary introduction title purpose ` +
-    `executive summary LinkedIn performance report`
+    `executive summary abstract scope`
   )
 }

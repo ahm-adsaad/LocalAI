@@ -1,0 +1,1134 @@
+{
+  "generatedAt": "2026-10-21T09:54:46.613Z",
+  "pool": 8,
+  "embedderRows": [
+    {
+      "embedder": "(BM25 only, no embedder)",
+      "weightsMb": null,
+      "embedMsPerChunk": null,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9268518518518519
+      }
+    },
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "weightsMb": 22.97237,
+      "embedMsPerChunk": 36.798595454545485,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8222222222222222,
+          "hit@3": 0.9333333333333333,
+          "hit@5": 1
+        },
+        "mrr": 0.8859259259259258
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9333333333333333
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9259259259259258
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "weightsMb": 34.014426,
+      "embedMsPerChunk": 42.63895909090934,
+      "dense": {
+        "hits": {
+          "hit@1": 0.7777777777777778,
+          "hit@3": 0.9333333333333333,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.8620370370370372
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9081481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.8962962962962961
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "weightsMb": 34.014426,
+      "embedMsPerChunk": 39.34186818181743,
+      "dense": {
+        "hits": {
+          "hit@1": 0.7777777777777778,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 1
+        },
+        "mrr": 0.8740740740740741
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9303703703703704
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "weightsMb": 22.972992,
+      "embedMsPerChunk": 27.244031818181444,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9148148148148147
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9333333333333333
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9259259259259258
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "weightsMb": 24.44801,
+      "embedMsPerChunk": 39.44392727272828,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9333333333333333,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9444444444444444
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.937037037037037
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "weightsMb": 34.014367,
+      "embedMsPerChunk": 62.83424999999856,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 1
+        },
+        "mrr": 0.898888888888889
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9185185185185184
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9111111111111111
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "weightsMb": 137.296292,
+      "embedMsPerChunk": 165.30830909090582,
+      "dense": {
+        "hits": {
+          "hit@1": 0.7555555555555555,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.8480056980056981
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9002116402116402
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8444444444444444,
+          "hit@3": 0.9333333333333333,
+          "hit@5": 0.9333333333333333
+        },
+        "mrr": 0.8851851851851851
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "weightsMb": 110.083337,
+      "embedMsPerChunk": 125.74555454545506,
+      "dense": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 1
+        },
+        "mrr": 0.9285185185185185
+      },
+      "hybrid": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9444444444444444
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.937037037037037
+      }
+    }
+  ],
+  "rerankRows": [
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 72.36079999999492,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9259259259259258
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 278.4673999999941,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 262.4796999999962,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 248.03650000000198,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Xenova/all-MiniLM-L6-v2",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 800.7589000000007,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.95
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9333333333333333
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 58.67630000000645,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9259259259259258
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 257.1252000000095,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 249.7908999999927,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 249.73619999999937,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Xenova/bge-small-en-v1.5",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 729.2342000000062,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9574074074074075
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9444444444444444
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 61.76029999999446,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9259259259259258
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 255.1461999999883,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 247.23680000001332,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 233.29449999998906,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Xenova/gte-small",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 669.2583999999915,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9574074074074075
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9444444444444444
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 53.68410000001313,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 253.0225999999675,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 229.87089999997988,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 237.62089999997988,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Snowflake/snowflake-arctic-embed-xs",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 660.3723999999929,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.95
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9333333333333333
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 71.49379999999655,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9259259259259258
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 276.7734000000055,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 262.86959999997634,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 271.12689999997383,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "mixedbread-ai/mxbai-embed-xsmall-v1",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 847.58679999999,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9462962962962963
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9333333333333333
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 69.53119999996852,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 306.0506999999634,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 290.0006000000285,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 272.11610000004293,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Xenova/e5-small-v2",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 885.0917999999947,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9611111111111111
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9444444444444444
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 66.77529999997932,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9259259259259258
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8666666666666667,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9185185185185184
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 274.16049999999814,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 248.42810000001919,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 238.935899999924,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "nomic-ai/nomic-embed-text-v1.5",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 792.32779999997,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.9574074074074075
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9444444444444444
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "reranker": "Xenova/ms-marco-TinyBERT-L-2-v2",
+      "weightsMb": 4.496298,
+      "rerankMsP50": 76.90890000003856,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-4-v2",
+      "weightsMb": 19.458042,
+      "rerankMsP50": 289.7595999999903,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.937037037037037
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.8888888888888888,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9296296296296295
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "reranker": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "weightsMb": 23.143499,
+      "rerankMsP50": 265.1463999999687,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9592592592592593
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9333333333333333,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9518518518518517
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "reranker": "jinaai/jina-reranker-v1-tiny-en",
+      "weightsMb": 33.424854,
+      "rerankMsP50": 244.81429999996908,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 1,
+          "hit@5": 1
+        },
+        "mrr": 0.9481481481481481
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 0.9777777777777777
+        },
+        "mrr": 0.9407407407407407
+      }
+    },
+    {
+      "embedder": "Xenova/bge-base-en-v1.5",
+      "reranker": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+      "weightsMb": 87.245802,
+      "rerankMsP50": 872.6252000000095,
+      "reranked": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9777777777777777,
+          "hit@5": 1
+        },
+        "mrr": 0.95
+      },
+      "excerpt": {
+        "hits": {
+          "hit@1": 0.9111111111111111,
+          "hit@3": 0.9555555555555556,
+          "hit@5": 0.9555555555555556
+        },
+        "mrr": 0.9333333333333333
+      }
+    }
+  ],
+  "errors": []
+}

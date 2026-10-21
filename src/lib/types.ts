@@ -25,6 +25,9 @@ export interface StoredChunk {
   text: string
   /** Float32 embedding vector produced by the on-device MiniLM pipeline. */
   embedding: number[]
+  /** 1-based page range the chunk was cut from; absent on chunks indexed before pages were tracked. */
+  pageStart?: number
+  pageEnd?: number
 }
 
 export interface RankedChunk {
@@ -33,6 +36,10 @@ export interface RankedChunk {
   documentName: string
   text: string
   score: number
+  /** Cross-encoder relevance logit, present when this chunk was in the reranked pool. */
+  rerankScore?: number
+  pageStart?: number
+  pageEnd?: number
 }
 
 /** Worker returns scores; main thread rehydrates text for the prompt/UI. */
@@ -41,12 +48,52 @@ export interface ScoredChunkId {
   score: number
 }
 
+/** One (question, candidate text) pair for the cross-encoder. */
+export interface RerankPair {
+  query: string
+  text: string
+}
+
+/** Engine-level timings for one generation, reported by the worker. */
+export interface GenerationStats {
+  /** Time to first token; null if nothing was produced. */
+  ttftMs: number | null
+  decodeTokPerS: number
+  prefillTokPerS: number | null
+  promptTokens: number | null
+  completionTokens: number
+  totalMs: number
+}
+
+/** Per-turn observability shown under each answer and persisted with the chat. */
+export interface TurnStats extends GenerationStats {
+  modelId: string
+  retrievalMs: number | null
+  /** Cross-encoder pass over the fused candidates; null when it did not run. */
+  rerankMs: number | null
+  /** Time spent rewriting a follow-up into a standalone question. */
+  condenseMs: number | null
+}
+
+/** One row of a structured extraction; `source` is the 1-based excerpt index. */
+export interface ExtractedField {
+  name: string
+  value: string | null
+  source: number | null
+}
+
 export interface ChatTurn {
   id: string
   role: 'user' | 'assistant'
   content: string
   sources?: RankedChunk[]
   streaming?: boolean
+  stats?: TurnStats
+  /** The standalone question actually used for retrieval, if it was rewritten. */
+  retrievalQuery?: string
+  extraction?: ExtractedField[]
+  /** The user stopped generation; `content` is what had been produced. */
+  aborted?: boolean
 }
 
 export interface ChatSession {
@@ -73,35 +120,59 @@ export type WorkerRequest =
   | { id: string; type: 'embed'; texts: string[] }
   | {
       id: string
-      type: 'search'
-      query: string
-      /** Vectors only — text stays on the main thread to keep postMessage light. */
-      chunks: Array<{ id: string; embedding: number[] }>
-      topK: number
+      type: 'setIndex'
+      /** Row-major, L2-normalised; transferred, not copied. */
+      ids: string[]
+      dim: number
+      vectors: Float32Array
     }
-  | { id: string; type: 'generate'; messages: ChatMessage[]; stream: boolean }
+  | { id: string; type: 'search'; query: string; topK: number }
+  | { id: string; type: 'rerank'; pairs: RerankPair[] }
+  | {
+      id: string
+      type: 'generate'
+      messages: ChatMessage[]
+      stream: boolean
+      options?: GenerateOptions
+    }
   | { id: string; type: 'abort' }
+
+export interface GenerateOptions {
+  maxTokens?: number
+  temperature?: number
+  /** JSON schema string; when set, decoding is grammar-constrained to match it. */
+  jsonSchema?: string
+}
 
 export type WorkerEvent =
   | { id: string; type: 'progress'; progress: number; text: string }
   | { id: string; type: 'llmReady'; modelId: string }
   | { id: string; type: 'embedderReady'; modelId: string }
   | { id: string; type: 'embeddings'; embeddings: number[][] }
+  | { id: string; type: 'indexed'; size: number }
   | { id: string; type: 'searchResult'; results: ScoredChunkId[] }
+  | { id: string; type: 'rerankResult'; scores: number[] }
   | { id: string; type: 'token'; token: string }
-  | { id: string; type: 'done'; content: string }
+  | { id: string; type: 'done'; content: string; stats: GenerationStats }
+  | { id: string; type: 'aborted'; content: string; stats: GenerationStats }
   | { id: string; type: 'error'; error: string }
-  | { id: string; type: 'aborted' }
 
 /**
  * Small sentence embedding model for RAG. ONNX build via Transformers.js
  * entirely in the worker — never sent to a server.
  */
 export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2'
+/**
+ * Cross-encoder that re-scores the fused candidates. Chosen by
+ * `npm run eval:models` (see eval/results/models.md); also WASM, also on-device.
+ */
+export const RERANK_MODEL_ID = 'Xenova/ms-marco-MiniLM-L-6-v2'
 
 export const TOP_K = 3
 /** Overview still stays small — long prompts dominate WebGPU prefill time. */
 export const TOP_K_OVERVIEW = 4
+/** Structured extraction needs a little more coverage than a single-fact answer. */
+export const TOP_K_EXTRACT = 5
 /**
  * How many cosine hits to pull before fusing with BM25.
  * Wider pool → better hybrid recall; still cheap at browser library sizes.

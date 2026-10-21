@@ -1,0 +1,45 @@
+# Riverside Family Clinic — Visit Summary
+
+CONFIDENTIAL MEDICAL RECORD. Prepared for the patient's personal records. This summary covers the office visit on 12 March 2025 and the care plan agreed at that visit.
+
+## Patient details
+
+Patient: Jordan Lee
+Date of birth: 14 March 1988
+Medical record number: RFC-204817
+Attending physician: Dr. Priya Natarajan, MD (Internal Medicine)
+Visit type: Annual physical with follow-up on blood pressure
+
+## Allergies
+
+Jordan Lee has a documented allergy to penicillin. The reaction recorded in 2016 was hives and facial swelling within two hours of a first dose of amoxicillin. Penicillin-class antibiotics must be avoided; cephalosporins were tolerated in 2021 without incident. There are no known food allergies and no latex sensitivity.
+
+## Current medications
+
+Lisinopril 10 mg, one tablet by mouth every morning, for hypertension. Started in September 2024.
+
+Atorvastatin 20 mg, one tablet at bedtime, for elevated LDL cholesterol. Started in January 2025.
+
+Cetirizine 10 mg as needed for seasonal allergies. The patient reports using it roughly twice a week between April and June.
+
+## Vital signs at this visit
+
+Blood pressure was 128/82 mmHg, down from 142/91 mmHg at the September 2024 visit. Heart rate was 68 beats per minute and regular. Weight was 81.4 kg, a decrease of 2.6 kg since September. Height 178 cm. Body mass index 25.7. Temperature 36.7 °C. Oxygen saturation 98% on room air.
+
+## Laboratory results (drawn 5 March 2025)
+
+Total cholesterol 182 mg/dL. LDL cholesterol 104 mg/dL, improved from 151 mg/dL before atorvastatin. HDL cholesterol 52 mg/dL. Triglycerides 131 mg/dL. Fasting glucose 94 mg/dL. HbA1c 5.4%. Creatinine 0.9 mg/dL with an estimated GFR above 90. Potassium 4.2 mmol/L. Liver enzymes within normal limits.
+
+## Assessment
+
+Hypertension is now controlled on lisinopril with lifestyle changes; the goal remains below 130/80. Hyperlipidemia is responding well to atorvastatin and the LDL target of under 100 mg/dL is nearly met. Seasonal allergic rhinitis is adequately managed with cetirizine. Overall the patient is in good health with improving cardiovascular risk markers.
+
+## Plan
+
+Continue lisinopril 10 mg daily and atorvastatin 20 mg nightly with no dose changes. Repeat the lipid panel and a basic metabolic panel in six months. Maintain at least 150 minutes of moderate exercise per week and continue the reduced-sodium diet discussed in September. A flu vaccine was administered at this visit in the left deltoid, lot number FL24-0931. The tetanus booster is due in 2027.
+
+## Follow-up
+
+Next appointment: 16 September 2025 at 9:30 AM with Dr. Natarajan for a six-month blood pressure and lipid review. Patients should bring a list of all current medications. Contact the clinic at (555) 014-2200 if blood pressure readings at home exceed 140/90 on two consecutive days.
+
+Emergency contact on file: Casey Lee (sibling), (555) 014-7781.

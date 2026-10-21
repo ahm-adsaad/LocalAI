@@ -1,0 +1,43 @@
+# Lumen Software — Employee Handbook (Excerpt)
+
+Effective 1 January 2025. This excerpt covers time off, remote work, expenses, equipment, and security. Where this handbook conflicts with local law, local law applies. Questions go to people-ops@lumen.example.
+
+## Paid time off
+
+Full-time employees accrue 20 days of paid time off per year, earned at 1.67 days per month from the first day of employment. Up to 5 unused days may be carried into the next calendar year; any balance above that is forfeited on 31 December. Requests of five or more consecutive days should be submitted at least three weeks in advance in the Workday portal. Separate from PTO, employees receive 10 paid sick days per year, which do not carry over.
+
+## Public holidays
+
+Lumen observes 11 paid public holidays each year. The list is published every November. Employees who are required to work on a holiday receive a substitute day off within the following sixty days.
+
+## Parental leave
+
+Primary caregivers are entitled to 16 weeks of fully paid parental leave, and secondary caregivers to 6 weeks, available after six months of service. Leave may be taken in up to two blocks within the first year after birth or placement.
+
+## Remote and hybrid work
+
+Employees may work remotely up to 3 days per week with their manager's approval; Tuesdays are an in-office anchor day for all teams. Core collaboration hours are 10 AM to 3 PM in the employee's home office time zone. Fully remote arrangements require approval from the department head and are reviewed annually. Employees working from another country for more than 30 days in a year must notify People Operations in advance for tax and immigration review.
+
+## Probation and performance
+
+New hires complete a 90-day probation period with a check-in at day 30 and day 60. Performance reviews take place twice a year, in January and July, and feed into the compensation cycle that follows the January review.
+
+## Business expenses
+
+Reasonable expenses incurred on company business are reimbursed when submitted through Expensify within 30 days with itemised receipts. The meal allowance while travelling is $60 per day. Hotel stays are capped at $220 per night in North America and £180 per night in the United Kingdom unless a conference rate is higher. Economy class is the standard for flights under six hours; business class may be booked for flights longer than six hours with vice-president approval. Mileage is reimbursed at the current IRS rate.
+
+## Equipment
+
+Each employee receives a company laptop, which is refreshed every 3 years. A $500 home-office stipend is available in the first month of employment for a desk, chair, or monitor. Equipment remains company property and must be returned within five business days of the employment end date.
+
+## Benefits summary
+
+Lumen matches 401(k) contributions up to 4% of base salary. Tuition reimbursement of up to $3,000 per year is available for approved courses. Employees who refer a candidate who is hired and completes probation receive a $2,500 referral bonus.
+
+## Security
+
+All laptops must have full-disk encryption and two-factor authentication enabled. A lost or stolen device must be reported to it-security@lumen.example within 24 hours. Customer data may never be stored on personal devices or in personal cloud accounts. Phishing simulations run quarterly; employees who fail two in a row complete additional training.
+
+## Leaving Lumen
+
+Employees are asked to give at least two weeks' notice. Final pay, including accrued unused PTO where required by law, is issued on the next regular payday. Access to systems is revoked at the end of the last working day.

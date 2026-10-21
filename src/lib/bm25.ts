@@ -3,9 +3,9 @@
  * Complements MiniLM cosine: exact names, codes, and rare tokens that embeddings miss.
  */
 
-const TOKEN_RE = /[a-z0-9]+(?:[.%/\-][a-z0-9]+)*/g
+const TOKEN_RE = /[a-z0-9]+(?:[.%/-][a-z0-9]+)*/g
 
-/** Lowercase alphanumerics; keeps codes like "IgE", "10.65%", "penicillin-allergy". */
+/** Lowercase alphanumerics; keeps joined codes like "ige", "10.65", "penicillin-allergy", "a/b". */
 export function tokenize(text: string): string[] {
   const matches = text.toLowerCase().match(TOKEN_RE)
   if (!matches) return []
