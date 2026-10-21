@@ -1,0 +1,5 @@
+# Project notes
+
+The project codename is Tangerine Falcon.
+
+The kickoff meeting is held every Monday morning.
