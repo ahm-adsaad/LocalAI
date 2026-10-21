@@ -35,9 +35,11 @@ import {
   titleFromTurns,
 } from './lib/db'
 import { downloadChatMarkdown } from './lib/exportChat'
+import { isGpuMemoryFailure } from './lib/gpuErrors'
 import {
   DEFAULT_MODEL,
   MODEL_OPTIONS,
+  nextSmallerModel,
   recommendModel,
   resolveModelOptionId,
   type ModelOptionId,
@@ -62,15 +64,56 @@ const urlParams = new URLSearchParams(window.location.search)
 const benchRequested = urlParams.has('bench')
 /** `?model=qwen-fast` pins the boot model (used by the e2e privacy audit). */
 const urlModel = urlParams.get('model')
+/** `?simulateOom=<model id>` makes that model fail to load as if out of GPU memory (e2e). */
+const simulateOom = urlParams.get('simulateOom')
 
 function uid() {
   return crypto.randomUUID()
 }
 
 /** Survive React StrictMode remounts so we only download/load weights once. */
-let modelBootPromise: Promise<ModelOptionId> | null = null
+let modelBootPromise: Promise<LoadedModel> | null = null
 type BootProgress = (p: { progress: number; text: string }) => void
 const bootProgressSubs = new Set<BootProgress>()
+
+type LoadedModel = { id: ModelOptionId; notice: string | null }
+
+/**
+ * Loads `initial`; when the GPU cannot hold it, steps down to the next smaller
+ * model. Only the model that actually loaded is saved as the preference.
+ */
+async function loadWithFallback(
+  worker: ReturnType<typeof getWorkerClient>,
+  initial: ModelOptionId,
+  report: BootProgress,
+): Promise<LoadedModel> {
+  for (let id: ModelOptionId | null = initial; id; id = nextSmallerModel(id)) {
+    const spec = MODEL_OPTIONS[id]
+    if (id !== initial) {
+      report({ progress: 0.02, text: `Loading ${spec.label} · ${spec.modelId}…` })
+    }
+    try {
+      await worker.initLLM(
+        {
+          modelId: spec.modelId,
+          contextWindow: spec.contextWindow,
+          simulateFailure: simulateOom === id ? 'oom' : undefined,
+        },
+        report,
+      )
+    } catch (err) {
+      if (!isGpuMemoryFailure(err) || !nextSmallerModel(id)) throw err
+      continue
+    }
+    await setPreferredModelTier(id)
+    const notice =
+      id === initial
+        ? null
+        : `${MODEL_OPTIONS[initial].label} did not fit in this GPU's memory; using ${spec.label} instead.`
+    return { id, notice }
+  }
+  throw new Error('No model could be loaded')
+}
 
 function newSession(): ChatSession {
   const now = Date.now()
@@ -106,6 +149,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<ModelOptionId>(DEFAULT_MODEL)
   const [recommendedModel, setRecommendedModel] = useState<ModelOptionId>(DEFAULT_MODEL)
   const [modelSwitching, setModelSwitching] = useState(false)
+  const [modelNotice, setModelNotice] = useState<string | null>(null)
 
   const [documents, setDocuments] = useState<DocumentMeta[]>([])
   const [chunks, setChunks] = useState<StoredChunk[]>([])
@@ -130,23 +174,22 @@ export default function App() {
 
   const worker = useMemo(() => getWorkerClient(), [])
 
+  /** Loads `next`, or a smaller model if it does not fit; returns the model actually loaded. */
   const loadLlm = useCallback(
-    async (next: ModelOptionId, opts?: { switching?: boolean }) => {
+    async (next: ModelOptionId, opts?: { switching?: boolean }): Promise<ModelOptionId> => {
       const spec = MODEL_OPTIONS[next]
       if (opts?.switching) setModelSwitching(true)
       else setPhase('loading-llm')
       setProgress(0)
       setProgressText(`Loading ${spec.label} · ${spec.modelId}…`)
-      await worker.initLLM(
-        { modelId: spec.modelId, contextWindow: spec.contextWindow },
-        (p) => {
-          setProgress(p.progress)
-          setProgressText(p.text)
-        },
-      )
-      setSelectedModel(next)
-      await setPreferredModelTier(next)
+      const loaded = await loadWithFallback(worker, next, (p) => {
+        setProgress(p.progress)
+        setProgressText(p.text)
+      })
+      setSelectedModel(loaded.id)
+      setModelNotice(loaded.notice)
       if (opts?.switching) setModelSwitching(false)
+      return loaded.id
     },
     [worker],
   )
@@ -265,24 +308,21 @@ export default function App() {
               for (const cb of bootProgressSubs) cb(p)
             }
             fanout({ progress: 0.02, text: `Loading ${spec.label} · ${spec.modelId}…` })
-            await worker.initLLM(
-              { modelId: spec.modelId, contextWindow: spec.contextWindow },
-              fanout,
-            )
-            await setPreferredModelTier(initial)
+            const loaded = await loadWithFallback(worker, initial, fanout)
             fanout({ progress: 0.05, text: 'Loading embedding model…' })
             await worker.initEmbedder(fanout)
-            return initial
+            return loaded
           })().catch((err) => {
             modelBootPromise = null
             throw err
           })
         }
 
-        const initial = await modelBootPromise
+        const loaded = await modelBootPromise
         if (cancelled) return
 
-        setSelectedModel(initial)
+        setSelectedModel(loaded.id)
+        setModelNotice(loaded.notice)
         setPhase('ready')
         setProgress(1)
         setProgressText('Ready')
@@ -692,6 +732,17 @@ export default function App() {
             <div className="shrink-0 px-4 pt-3 sm:px-6">
               <p className="mx-auto max-w-3xl rounded-lg border border-[var(--ui-error)]/30 bg-[var(--ui-error)]/5 px-3 py-2.5 text-sm text-[var(--ui-error)]">
                 Failed to load on-device models (no server fallback): {modelError}
+              </p>
+            </div>
+          ) : null}
+
+          {modelNotice ? (
+            <div className="shrink-0 px-4 pt-3 sm:px-6">
+              <p
+                role="status"
+                className="mx-auto max-w-3xl rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-3 py-2.5 text-sm text-[var(--ui-text-muted)]"
+              >
+                {modelNotice}
               </p>
             </div>
           ) : null}
