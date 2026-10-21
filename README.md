@@ -1,17 +1,38 @@
-# LocalAI — private document Q&A that never leaves the browser
+# LocalAI
+
+Private AI for company documents. It runs entirely in the browser, on the machine in front of you: no server to host, no account to create, and no document text leaving the device.
 
 [![CI](https://github.com/ahm-adsaad/LocalAI/actions/workflows/ci.yml/badge.svg)](https://github.com/ahm-adsaad/LocalAI/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/demo-localai.ahmadsaad.dev-2563eb)](https://localai.ahmadsaad.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-**Live demo: [localai.ahmadsaad.dev](https://localai.ahmadsaad.dev)** — Chrome or Edge with WebGPU. First load downloads ~1 GB of model weights once; after that it works offline.
-
-Drop in PDFs and ask questions. Retrieval, embeddings, and generation all run on your GPU
-inside a Web Worker. There is no backend: no API keys, no document text on the wire,
-and no server to trust. Every answer cites the excerpts it came from, and every turn
-reports its own latency and throughput.
+**Live demo: [localai.ahmadsaad.dev](https://localai.ahmadsaad.dev)** (Chrome or Edge with WebGPU). The first visit downloads about 1 GB of model weights once; after that it works offline.
 
 ![LocalAI answering with page-level citations and per-turn latency, next to the bench panel grading all 49 golden questions on the local GPU](./docs/screenshot.jpg)
+
+## Why this exists
+
+I kept hearing the same thing from people I spoke with at different companies. They had been told not to put work material into ChatGPT or Claude, or had decided not to on their own, because the data would go to a company they do not control. So they either did not use AI at work or used it only for things that did not matter. The tools they were allowed to use at work did less than the ones they used at home.
+
+I treated that as a discovery problem before a build problem, the way a forward deployed engineer would on a customer site. From those conversations I gathered requirements:
+
+- Nothing may leave the machine, and the person using it has to be able to check that rather than take it on trust.
+- Self-hosting a model was not an option for them, so this cannot become an IT project.
+- It has to work for people who are not technical. Drop a file, ask a question, get an answer.
+- It has to do real work: answer questions over contracts, reports and handbooks, pull named fields out of them, and show where each answer came from so it can be checked.
+- Because the point was no infrastructure, it has to run on the laptops people already have, so I treated an integrated GPU as the baseline.
+
+LocalAI is what I built against those requirements. The table maps each one to what shipped, and the rest of this README shows the measurements rather than the claims.
+
+| What people needed | What shipped |
+| --- | --- |
+| Nothing leaves the machine, and you can check | The LLM, the embeddings and the reranker all run on the device inside a Web Worker. A Content Security Policy lets the page connect only to itself and the model-weight hosts; fonts and the ONNX runtime are served by the app itself. A Playwright audit boots the app on a real GPU, indexes a document, asks a question, and asserts that no request left for any other host, none carried a body, and none contained document text. |
+| No IT project | It is a web page. There is nothing to install, no account, no API key and no server. The model weights download once and stay cached. |
+| Usable by non-technical people | Drop a PDF, Word file, text or Markdown file onto the page and ask in plain language. Answers cite the file and page they came from. |
+| Real work, checkable | Hybrid retrieval with a cross-encoder reranker; grounded answers with clickable page-level citations; `/extract` pulls named fields under a JSON grammar so the output always parses; follow-up questions are rewritten into standalone ones before retrieval. |
+| Ordinary laptops | Five model sizes with a VRAM-aware default and an automatic step-down when a model does not fit. Every number in this README was measured on an integrated Intel GPU, the slowest realistic case. |
+
+On the included golden set, retrieval puts the right excerpt in the prompt for 100% of questions and the default 1.5B model answers 100% of single-turn questions correctly, on that integrated laptop GPU. The evaluation section has the full tables, the misses, and what each eval run found.
 
 ## What it does
 
