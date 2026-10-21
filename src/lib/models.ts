@@ -194,6 +194,28 @@ export function modelFitsComfortably(
   return vramMb >= MODEL_OPTIONS[id].recommendAboveMb
 }
 
+/**
+ * A fallback must free a meaningful amount of GPU memory: a 2600 -> 2400 MB
+ * step would not rescue an out-of-memory load.
+ */
+const FALLBACK_VRAM_RATIO = 0.75
+
+/**
+ * Next model down for a GPU that cannot hold `id`: the entry with the largest
+ * approxVramMb at most FALLBACK_VRAM_RATIO of the current one (ties go to the
+ * earlier entry in MODEL_ORDER). Returns null when nothing is small enough.
+ */
+export function nextSmallerModel(id: ModelOptionId): ModelOptionId | null {
+  const limit = MODEL_OPTIONS[id].approxVramMb * FALLBACK_VRAM_RATIO
+  let best: ModelOptionId | null = null
+  for (const candidate of MODEL_ORDER) {
+    const vram = MODEL_OPTIONS[candidate].approxVramMb
+    if (vram > limit) continue
+    if (best === null || vram > MODEL_OPTIONS[best].approxVramMb) best = candidate
+  }
+  return best
+}
+
 /** @deprecated Use MODEL_OPTIONS / ModelOptionId — aliases for older imports. */
 export type ModelTierId = ModelOptionId
 export const MODEL_TIERS = MODEL_OPTIONS
