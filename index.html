@@ -8,20 +8,7 @@
       name="description"
       content="Local-first confidential document workspace. LLM and embeddings run entirely on-device via WebGPU."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-    <script>
-      // Set theme class before first paint to avoid a flash of the wrong theme.
-      try {
-        const stored = localStorage.getItem('localai-theme')
-        const dark = stored ? stored === 'dark' : true
-        document.documentElement.classList.toggle('dark', dark)
-      } catch {}
-    </script>
+    <script src="/theme-init.js"></script>
     <title>LocalAI · on-device documents</title>
   </head>
   <body>
