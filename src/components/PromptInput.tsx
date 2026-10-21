@@ -157,8 +157,8 @@ export function PromptInput({
           type="button"
           disabled={disabled || ingestBusy}
           onClick={() => fileRef.current?.click()}
-          title="Add a PDF to this chat (or drop it anywhere)"
-          aria-label="Add a PDF to this chat"
+          title="Add a document to this chat (or drop it anywhere)"
+          aria-label="Add a document to this chat"
           className="rounded-lg p-2 text-[var(--ui-text-muted)] transition-colors hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <IconPaperclip size={15} />

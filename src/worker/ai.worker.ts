@@ -308,9 +308,12 @@ async function initLLM(
     llmInitPromise = null
     llmInitTarget = null
     loadedModelId = null
-    // A lost device leaves the engine unusable; build a fresh one next time.
-    // Release any half-loaded weights now; the smaller retry needs that memory.
+    // WebLLM's reload() registers a pipeline only after a successful load, so
+    // after a failed reload unload() frees nothing; the failed attempt's buffers
+    // are released when the device is lost or garbage-collected. The call stays
+    // for the device-lost case.
     void engine?.unload().catch(() => {})
+    // A lost device leaves the engine unusable; build a fresh one next time.
     engine = null
     llmProgressSubs.delete(id)
     throw err

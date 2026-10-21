@@ -14,7 +14,6 @@ const GPU_MEMORY_PATTERN = new RegExp(
     'maxbuffersize',
     'maxstoragebuffer',
     'allocation failed',
-    'shader-f16',
   ].join('|'),
   'i',
 )

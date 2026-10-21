@@ -16,4 +16,8 @@ describe('readTextFile', () => {
   it('drops a UTF-8 BOM and normalises Windows line endings', () => {
     expect(readTextFile('﻿First line\r\nSecond line')).toBe('First line\nSecond line')
   })
+
+  it('normalises a lone carriage return to a newline', () => {
+    expect(readTextFile('one\rtwo\r\nthree')).toBe('one\ntwo\nthree')
+  })
 })

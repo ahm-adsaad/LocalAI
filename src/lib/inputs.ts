@@ -21,7 +21,7 @@ export function isSupportedFile(file: { name: string }): boolean {
   return detectInputKind(file.name) !== null
 }
 
-/** Strip a leading UTF-8 BOM and normalise Windows line endings. */
+/** Strip a leading BOM and normalise Windows and classic-Mac line endings. */
 export function readTextFile(raw: string): string {
-  return raw.replace(/^﻿/, '').replace(/\r\n/g, '\n')
+  return raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n')
 }

@@ -104,6 +104,10 @@ async function loadWithFallback(
       )
     } catch (err) {
       if (!isGpuMemoryFailure(err) || !nextSmallerModel(id)) throw err
+      console.warn(
+        `Model ${spec.modelId} failed to load, stepping down:`,
+        err instanceof Error ? err.message : String(err),
+      )
       continue
     }
     await setPreferredModelTier(id)
@@ -344,6 +348,7 @@ export default function App() {
     if (next === selectedModel || modelSwitching || phase === 'loading-llm') return
     if (generating) worker.abort()
     setModelError(null)
+    setModelNotice(null)
     try {
       await loadLlm(next, { switching: true })
       setPhase('ready')
@@ -755,7 +760,7 @@ export default function App() {
                     Chat privately with your documents
                   </h2>
                   <p className="mt-2 text-sm text-[var(--ui-text-muted)]">
-                    The model and your PDFs stay on this device. Nothing leaves the browser.
+                    The model and your documents stay on this device. Nothing leaves the browser.
                   </p>
                 </div>
 
@@ -796,7 +801,7 @@ export default function App() {
             <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl border-2 border-dashed border-[var(--ui-primary)] bg-[var(--ui-bg)]/80 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-2 text-[var(--ui-primary)]">
                 <IconFileText size={28} />
-                <p className="text-sm font-medium">Drop your PDF to add it to this chat</p>
+                <p className="text-sm font-medium">Drop your document to add it to this chat</p>
               </div>
             </div>
           ) : null}
