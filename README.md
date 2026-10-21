@@ -24,6 +24,8 @@ reports its own latency and throughput.
 - **Reproducible evals.** A Node retrieval eval runs in CI, `npm run eval:models` compares embedders and rerankers, and an in-browser bench (`?bench`) runs the full pipeline on your GPU and grades answers deterministically.
 - **Stop means stop.** The stop button interrupts the engine, so decoding ends at the next step and the partial answer is kept with its stats. (The two short cross-encoder batches that run before generation are not interruptible; on a laptop CPU they are about a second.)
 - **Five on-device models** (Qwen 2.5 0.5B/1.5B/3B, Phi-4 mini, Llama 3.2 3B), with a VRAM-aware default and hot swapping in the worker.
+- **PDF, text, Markdown and DOCX.** Drop `.pdf`, `.txt`, `.md` or `.docx` files. The parsers (pdf.js, and mammoth for DOCX) are loaded only when a file of that type is dropped, and extraction happens in the browser.
+- **Falls back to a smaller model when the GPU runs out of memory.** If a model does not fit, the app steps down to the next smaller one, says so, and keeps your saved model preference unchanged. It never falls back to a hosted model.
 
 ## Architecture
 
@@ -114,16 +116,16 @@ Two conclusions. Once BM25 is in the fusion, the embedder barely matters on this
 Open the app with `?bench`, click **Load sample corpus**, then **Run**. The bench runs every golden question through the exact chat pipeline on your GPU and grades answers by key-fact match. Copy the markdown row it produces.
 
 <!-- BENCH_TABLE_START -->
-| Model | GPU | n | Retrieval hit (single) | Answer acc (single) | Follow-up retrieval | Follow-up answer | TTFT p50 | Decode tok/s p50 | Prefill tok/s p50 | Total p50 | Retrieval p50 | Rerank p50 | Rewrite p50 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Qwen 2.5 · 1.5B (q4f16) | Intel Iris Xe, integrated (gen-12lp) | 49 | 100.0% | 97.8% | 100.0% | 75.0% | 7353 ms | 4.5 | 54 | 11926 ms | 28 ms | 1111 ms | 3784 ms |
+| Model | GPU | n | Retrieval hit (single) | Answer acc (single) | Follow-up retrieval | Follow-up answer | TTFT p50 | Decode tok/s p50 | Prefill tok/s p50 | Total p50 | Retrieval p50 | Rerank p50 | Focus p50 | Rewrite p50 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Qwen 2.5 · 1.5B (q4f16) | Intel Iris Xe, integrated (gen-12lp) | 49 | 100.0% | 100.0% | 100.0% | 50.0% | 8631 ms | 4.0 | 46 | 13613 ms | 24 ms | 971 ms | 803 ms | 4556 ms |
 <!-- BENCH_TABLE_END -->
 
-Measured 2026-10-21 on the production build in Chrome on a laptop with no discrete GPU, which is the worst realistic case for this app; a mid-range discrete GPU is typically an order of magnitude faster on both prefill and decode. Reading the row:
+Measured 2026-10-21 on the production build in Chrome on a laptop with no discrete GPU, which is the worst realistic case for this app; a mid-range discrete GPU is typically an order of magnitude faster on both prefill and decode. This is the shipped configuration (WASM cross-encoder, sentence focus on). The run overlapped with other processes on the laptop (code-review agents running Node), which likely depressed throughput against the previous row (prefill 46 against 54 tok/s, decode 4.0 against 4.5), so read the latency columns as slightly pessimistic. Reading the row:
 
-- **Retrieval is solved for this corpus; the model is the bottleneck.** Every one of the 49 questions had the answering excerpt in the prompt. Before the reranker the 1.5B model answered 95.6% of single-turn questions correctly; with it, **97.8%**: a hallucinated "no pets are allowed" disappeared once the pet-fee excerpt led the prompt instead of trailing it. The remaining single-turn miss is the vocabulary-gap case above, and the one follow-up miss is *"and for tuition?"*, where the rewrite stayed anchored on the previous topic.
-- **The follow-up rewrite works, and the reranker covers for it.** Verbatim follow-ups retrieve the right chunk 75% of the time with fusion alone and 100% with the cross-encoder; rewritten ones, 100% either way. The rewrite costs one short extra generation (3.8 s here, a few hundred ms on a discrete GPU) and only runs when the question looks context-dependent.
-- **Reranking is the one retrieval stage you can feel.** Hybrid search over the whole library takes 28 ms; the cross-encoder's eight pairs take 1.1 s on this laptop's CPU (WASM). That is a sixth of the time to first token here, but on a fast GPU it would be the largest pre-generation cost, which is why the pool stays at 8 and why running the cross-encoder on WebGPU is the next thing to measure. The sentence-focus pass added after this run (the hard case above) scores about 28 short pairs per question in a second batch; the bench reports it as "Focus p50" and the row will be refreshed with it.
+- **Retrieval is solved for this corpus; the model is the bottleneck.** Every one of the 49 questions had the answering excerpt in the prompt. All 45 single-turn answers are now correct (the previous row had 97.8%), including the hard case above: *"What medication does Jordan Lee take for blood pressure?"* is answered because the excerpt now carries the Lisinopril sentence. Both misses this run are follow-ups, with retrieval correct for each. *"When does their contract expire?"* was answered correctly last run, so that is most likely sampling noise at temperature 0.4 on a 1.5B model (follow-up answers went from 75.0% to 50.0% on n=4, which is two questions flipping, not a trend). *"and for tuition?"* is the same miss as before: the rewrite stays anchored on the previous topic.
+- **The follow-up rewrite works, and the reranker covers for it.** Verbatim follow-ups retrieve the right chunk 75% of the time with fusion alone and 100% with the cross-encoder; rewritten ones, 100% either way. The rewrite costs one short extra generation (4.6 s here, a few hundred ms on a discrete GPU) and only runs when the question looks context-dependent.
+- **Reranking is the one retrieval stage you can feel, and it stays on WASM.** Hybrid search over the whole library takes 24 ms; the cross-encoder's eight pairs take 971 ms on this laptop's CPU (WASM), and the sentence-focus pass, about 28 short pairs in a second batch, takes another 803 ms. I measured the cross-encoder on WebGPU on the same machine: once warm the 8-pair rerank is about 3.7x faster (roughly 200 ms against 750 ms), but the focus batch is not (about 800 ms against 450 to 760 ms), so the whole stage nets only 15 to 25% depending on how you average. The first question also pays about 4.9 s, mostly one-off shader compilation. That did not justify putting the encoder next to the LLM in VRAM, so WASM ships; the table and the two changes that might flip the result are in [NOTES.md](./NOTES.md#vector-search).
 
 ## Privacy, enforced
 
@@ -139,6 +141,8 @@ Measured 2026-10-21 on the production build in Chrome on a laptop with no discre
 | --- | --- |
 | One worker owns all models and the index | Embedding, reranking, generation and dense search share a single message surface; nothing blocks React paints during multi-second loads. |
 | Embeddings and reranker on WASM, LLM on WebGPU | The Q4 LLM owns most of the VRAM budget; keeping the small encoders on WASM avoids contention. |
+| Cross-encoder stays on WASM (measured) | WebGPU is about 3.7x faster on the 8-pair rerank after warm-up but slower on the many-short-pairs focus batch, nets roughly 15 to 25% over the stage, adds a ~4.9 s first-question cost, and a failure inside its session create cannot fall back to WASM. The switch is one constant (`RERANKER_DEVICE`). |
+| Step down a model on GPU memory failure | A 3B model that does not fit should not strand the user on an error. The chain is Qwen 3B / Phi-4 mini / Llama 3B, then Qwen 1.5B, then Qwen 0.5B, then the error, and a fallback must need at most 75% of the failed model's VRAM estimate. The notice names both models, and the failed model is never saved as the preference. |
 | RRF over score blending | Cosine and BM25 scores live on different scales. Rank fusion needs no calibration and the eval confirms it beats either alone. |
 | Rerank only the top 8 | A cross-encoder reads question and chunk together, so it catches paraphrases bi-encoders miss, but it costs a forward pass per pair. Fusion already has 100% hit@5, so eight candidates cover every answer at a fixed, small cost. |
 | Keep MiniLM | Measured, not assumed: no small embedder beats it by more than 0.011 MRR once fused with BM25, and changing embedders invalidates every stored vector. |
@@ -161,7 +165,7 @@ More in [NOTES.md](./NOTES.md).
 | Embeddings | `@huggingface/transformers` — `Xenova/all-MiniLM-L6-v2`, q8, WASM |
 | Reranker | `@huggingface/transformers` — `Xenova/ms-marco-MiniLM-L-6-v2` cross-encoder, q8, WASM |
 | Retrieval | Cosine (in-worker `Float32Array` index) + Okapi BM25 + RRF + cross-encoder, in `src/lib/` |
-| PDF | `pdfjs-dist` with glyph-position reading-order reconstruction, page-tagged chunks |
+| Inputs | `pdfjs-dist` (lazy) with glyph-position reading-order reconstruction and page-tagged chunks; `mammoth` (lazy) for DOCX; text and Markdown read directly |
 | Persistence | IndexedDB via `idb` |
 | Tests / eval | Vitest, Playwright, Node eval harnesses, in-browser bench |
 | Hosting | Cloudflare Workers static assets with COOP/COEP and CSP headers |
@@ -172,7 +176,8 @@ More in [NOTES.md](./NOTES.md).
 npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests (retrieval, reranking, chunking, prompts, extraction, CSP)
-npm run test:e2e     # production build in Chrome: CSP headers + the GPU privacy audit
+npm run test:e2e     # production build in Chrome: CSP headers, the GPU privacy audit, and (locally) the model fallback and PDF/text/Markdown/DOCX input specs
+npm run fixtures:docx  # regenerate the DOCX fixture used by the input spec
 npm run typecheck
 npm run lint
 npm run eval:pdfs    # render eval/corpus/*.txt → public/samples/*.pdf
@@ -186,7 +191,11 @@ Requires Chrome 113+ or Edge 113+ with hardware GPU acceleration. Try the sample
 
 ```
 src/lib/pipeline.ts      the whole ask path, React-free (shared by chat and bench)
-src/lib/ingest.ts        PDF → chunks → embeddings → IndexedDB
+src/lib/ingest.ts        file → chunks → embeddings → IndexedDB
+src/lib/inputs.ts        accepted file types and how each is classified
+src/lib/documents.ts     text extraction per type (pdf.js and mammoth loaded lazily)
+src/lib/gpuErrors.ts     recognises GPU out-of-memory failures for the model fallback
+src/lib/focus.ts         sentence-level excerpt focus with the cross-encoder
 src/lib/rag.ts           RRF fusion, overview detection, source selection
 src/lib/rerank.ts        cross-encoder pool + merge (shared by app and eval)
 src/lib/bm25.ts          Okapi BM25 over chunk text
@@ -204,7 +213,7 @@ src/lib/grading.ts       deterministic answer grading for the bench
 src/worker/ai.worker.ts  WebLLM + Transformers.js + VectorIndex behind a typed protocol
 src/components/BenchPanel.tsx  ?bench panel: load corpus, run, copy markdown
 eval/                    corpus, golden set, PDF renderer, retrieval eval, model comparison, results
-e2e/                     Playwright: CSP/header checks (CI) and the GPU privacy audit (local)
+e2e/                     Playwright: CSP/header checks (CI); privacy audit, model fallback and input specs (local, real GPU); fixtures/
 ```
 
 ## License

@@ -30,6 +30,19 @@ Llama is industry-familiar. VRAM still recommends a default, but users can pick 
 row — switching reloads weights in the worker with no server involved. `?model=qwen-fast`
 pins the boot model (the e2e audit uses it).
 
+## Model fallback
+
+If loading a model fails with a GPU memory error (`isGpuMemoryFailure` in `gpuErrors.ts`),
+`App.tsx` asks `nextSmallerModel` (`models.ts`) for a replacement and retries. The chain
+is Qwen 3B / Phi-4 mini / Llama 3B, then Qwen 1.5B, then Qwen 0.5B, then the error
+is shown. A fallback must have at most 75% of the failed model's VRAM estimate, so a
+retry is a real step down and not a near-tie. The notice reads "<failed> did not fit in
+this GPU's memory; using <used> instead.", and the failed model is never written as the
+saved preference, so the next visit tries it again. This is verified end to end only
+through the synthetic `?simulateOom=<modelOptionId>` hook (`e2e/fallback.spec.ts`).
+A real out-of-memory depends on `isGpuMemoryFailure` matching the message the worker
+actually throws, which has not been reproduced on a small GPU.
+
 ## Embeddings
 
 **Model:** `Xenova/all-MiniLM-L6-v2` via `@huggingface/transformers` `feature-extraction`,
@@ -131,6 +144,18 @@ not move) and tags each with the 1-based page range it spans. The prompt labels
 excerpts `[1] lease.pdf (p. 2)`, citation chips carry the title "lease.pdf, p. 2",
 source cards show the page, and the Markdown export includes it. Chunks indexed before
 this change have no page fields; everything degrades to the filename.
+
+## Inputs
+
+`inputs.ts` accepts `.pdf`, `.txt`, `.md`/`.markdown` and `.docx`; `documents.ts`
+turns each into the page strings the chunker already takes. Text and Markdown are one
+unpaged document, so their citations carry no page label. DOCX goes through mammoth,
+which is imported only when a DOCX is dropped; pdf.js is now loaded the same way, so
+neither parser is in the initial bundle. A PDF with no text layer (a scan) and an empty
+DOCX hit the same "No extractable text" message. OCR is deferred: tesseract.js would
+need its runtime and language data served first-party to keep the CSP intact.
+`e2e/inputs.spec.ts` covers the three non-PDF types; `npm run fixtures:docx` rebuilds
+the DOCX fixture.
 
 ## Follow-ups and extraction
 
