@@ -264,6 +264,8 @@ async function initLLM(
     llmInitTarget = null
     loadedModelId = null
     // A lost device leaves the engine unusable; build a fresh one next time.
+    // Release any half-loaded weights now; the smaller retry needs that memory.
+    void engine?.unload().catch(() => {})
     engine = null
     llmProgressSubs.delete(id)
     throw err

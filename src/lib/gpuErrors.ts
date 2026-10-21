@@ -1,16 +1,16 @@
 /** Thrown by the worker when a load is started with `simulateFailure: 'oom'`. */
 export const SIMULATED_OOM_MESSAGE =
-  'Simulated GPU memory failure (requested by ?simulateOom)'
+  'Simulated GPU memory failure: out of memory (requested by ?simulateOom)'
 
 const GPU_MEMORY_PATTERN = new RegExp(
   [
     'out of memory',
-    'oom',
+    '\\boom\\b',
     'device lost',
     'devicelost',
-    'insufficient',
+    'insufficient[^.]*\\b(?:memory|vram|gpu)\\b',
     'not enough memory',
-    'exceeds',
+    'exceeds[^.]*\\b(?:buffer|size|limit|memory)\\b',
     'maxbuffersize',
     'maxstoragebuffer',
     'allocation failed',
