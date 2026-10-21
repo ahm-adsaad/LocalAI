@@ -136,11 +136,16 @@ export class WorkerClient {
   }
 
   initLLM(
-    opts: { modelId: string; contextWindow: number },
+    opts: { modelId: string; contextWindow: number; simulateFailure?: 'oom' },
     onProgress?: ProgressHandler,
   ) {
     return this.request<{ type: 'llmReady'; modelId: string }>(
-      { type: 'initLLM', modelId: opts.modelId, contextWindow: opts.contextWindow },
+      {
+        type: 'initLLM',
+        modelId: opts.modelId,
+        contextWindow: opts.contextWindow,
+        simulateFailure: opts.simulateFailure,
+      },
       { onProgress },
     )
   }

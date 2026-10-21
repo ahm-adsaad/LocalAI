@@ -122,7 +122,13 @@ export type ModelPhase = 'idle' | 'loading-llm' | 'loading-embed' | 'ready' | 'e
 /* ---------- Worker protocol ---------- */
 
 export type WorkerRequest =
-  | { id: string; type: 'initLLM'; modelId: string; contextWindow: number }
+  | {
+      id: string
+      type: 'initLLM'
+      modelId: string
+      contextWindow: number
+      simulateFailure?: 'oom'
+    }
   | { id: string; type: 'initEmbedder' }
   | { id: string; type: 'embed'; texts: string[] }
   | {

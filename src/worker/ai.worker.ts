@@ -25,6 +25,7 @@ import {
   type PreTrainedTokenizer,
 } from '@huggingface/transformers'
 import { EMBED_BATCH_SIZE, planBatches } from '../lib/batching'
+import { SIMULATED_OOM_MESSAGE } from '../lib/gpuErrors'
 import { statsFromTimers } from '../lib/stats'
 import {
   EMBED_MODEL_ID,
@@ -199,7 +200,12 @@ async function scorePairs(pairs: RerankPair[], onProgress?: (p: number, text: st
   return pairs.map((_, i) => Number(logits.data[i * cols + col]))
 }
 
-async function initLLM(id: string, modelId: string, contextWindow: number) {
+async function initLLM(
+  id: string,
+  modelId: string,
+  contextWindow: number,
+  simulateFailure?: 'oom',
+) {
   llmProgressSubs.add(id)
 
   // Already hot on the requested weights — skip reload.
@@ -243,6 +249,8 @@ async function initLLM(id: string, modelId: string, contextWindow: number) {
       engine.setInitProgressCallback(initProgressCallback)
     }
 
+    if (simulateFailure === 'oom') throw new Error(SIMULATED_OOM_MESSAGE)
+
     await engine.reload(modelId, { context_window_size: contextWindow })
     loadedModelId = modelId
   })()
@@ -255,6 +263,8 @@ async function initLLM(id: string, modelId: string, contextWindow: number) {
     llmInitPromise = null
     llmInitTarget = null
     loadedModelId = null
+    // A lost device leaves the engine unusable; build a fresh one next time.
+    engine = null
     llmProgressSubs.delete(id)
     throw err
   }
@@ -379,7 +389,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
   try {
     switch (msg.type) {
       case 'initLLM':
-        await initLLM(msg.id, msg.modelId, msg.contextWindow)
+        await initLLM(msg.id, msg.modelId, msg.contextWindow, msg.simulateFailure)
         break
 
       case 'initEmbedder': {
