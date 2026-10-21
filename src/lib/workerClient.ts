@@ -1,12 +1,25 @@
+import { rerankPairs } from './rerank'
 import type {
   ChatMessage,
+  GenerateOptions,
+  GenerationStats,
   InitProgress,
+  RankedChunk,
   ScoredChunkId,
+  StoredChunk,
   WorkerEvent,
   WorkerRequest,
 } from './types'
+import { packVectors } from './vectorIndex'
 
 type ProgressHandler = (p: InitProgress) => void
+
+export interface GenerateResult {
+  content: string
+  stats: GenerationStats
+  /** True when the user stopped generation; `content` is the partial answer. */
+  aborted?: boolean
+}
 
 /** Distributive Omit so discriminated union members keep their own fields. */
 type WorkerRequestBody = WorkerRequest extends infer R
@@ -32,6 +45,9 @@ export class WorkerClient {
     }
   >()
   private seq = 0
+  /** Which chunk set the worker's dense index currently holds. */
+  private indexedKey: string | null = null
+  private indexing: Promise<void> | null = null
 
   constructor() {
     this.worker = new Worker(new URL('../worker/ai.worker.ts', import.meta.url), {
@@ -50,8 +66,8 @@ export class WorkerClient {
     return `req-${this.seq}`
   }
 
-  private post(msg: WorkerRequest) {
-    this.worker.postMessage(msg)
+  private post(msg: WorkerRequest, transfer: Transferable[] = []) {
+    this.worker.postMessage(msg, transfer)
   }
 
   private handleEvent(event: WorkerEvent) {
@@ -74,17 +90,25 @@ export class WorkerClient {
         this.pending.delete(event.id)
         slot.resolve(event.embeddings)
         break
+      case 'indexed':
+        this.pending.delete(event.id)
+        slot.resolve(event.size)
+        break
       case 'searchResult':
         this.pending.delete(event.id)
         slot.resolve(event.results)
         break
+      case 'rerankResult':
+        this.pending.delete(event.id)
+        slot.resolve(event.scores)
+        break
       case 'done':
         this.pending.delete(event.id)
-        slot.resolve(event.content)
+        slot.resolve({ content: event.content, stats: event.stats })
         break
       case 'aborted':
         this.pending.delete(event.id)
-        slot.reject(new Error('Generation aborted'))
+        slot.resolve({ content: event.content, stats: event.stats, aborted: true })
         break
       case 'error':
         this.pending.delete(event.id)
@@ -96,6 +120,7 @@ export class WorkerClient {
   private request<T>(
     body: WorkerRequestBody,
     hooks?: { onProgress?: ProgressHandler; onToken?: (token: string) => void },
+    transfer: Transferable[] = [],
   ): Promise<T> {
     const id = this.nextId()
     return new Promise<T>((resolve, reject) => {
@@ -105,7 +130,7 @@ export class WorkerClient {
         onProgress: hooks?.onProgress,
         onToken: hooks?.onToken,
       })
-      this.post({ ...body, id } as WorkerRequest)
+      this.post({ ...body, id } as WorkerRequest, transfer)
     })
   }
 
@@ -126,20 +151,53 @@ export class WorkerClient {
     )
   }
 
-  embed(texts: string[]) {
-    return this.request<number[][]>({ type: 'embed', texts })
+  embed(texts: string[], onProgress?: ProgressHandler) {
+    return this.request<number[][]>({ type: 'embed', texts }, { onProgress })
   }
 
-  search(query: string, chunks: Array<{ id: string; embedding: number[] }>, topK: number) {
-    return this.request<ScoredChunkId[]>({ type: 'search', query, chunks, topK })
+  /**
+   * Make sure the worker's index holds exactly these chunks. Vectors cross the
+   * thread boundary once per library change as a single transferred buffer;
+   * the per-query message is just the question.
+   */
+  private syncIndex(chunks: StoredChunk[]): Promise<void> {
+    const key = chunks.map((c) => c.id).join('\n')
+    if (key === this.indexedKey) return Promise.resolve()
+    if (!this.indexing) {
+      const packed = packVectors(chunks)
+      this.indexing = this.request<number>(
+        { type: 'setIndex', ids: packed.ids, dim: packed.dim, vectors: packed.vectors },
+        undefined,
+        [packed.vectors.buffer],
+      )
+        .then(() => {
+          this.indexedKey = key
+        })
+        .finally(() => {
+          this.indexing = null
+        })
+    }
+    return this.indexing
+  }
+
+  async search(query: string, chunks: StoredChunk[], topK: number) {
+    await this.syncIndex(chunks)
+    return this.request<ScoredChunkId[]>({ type: 'search', query, topK })
+  }
+
+  /** Cross-encoder scores for the first `pool` candidates, aligned with `ranked`. */
+  rerank(query: string, ranked: RankedChunk[], pool: number, onProgress?: ProgressHandler) {
+    const pairs = rerankPairs(query, ranked, pool)
+    if (pairs.length === 0) return Promise.resolve<number[]>([])
+    return this.request<number[]>({ type: 'rerank', pairs }, { onProgress })
   }
 
   generate(
     messages: ChatMessage[],
-    opts: { stream: boolean; onToken?: (token: string) => void },
+    opts: { stream: boolean; onToken?: (token: string) => void; options?: GenerateOptions },
   ) {
-    return this.request<string>(
-      { type: 'generate', messages, stream: opts.stream },
+    return this.request<GenerateResult>(
+      { type: 'generate', messages, stream: opts.stream, options: opts.options },
       { onToken: opts.onToken },
     )
   }
@@ -152,6 +210,7 @@ export class WorkerClient {
   terminate() {
     this.worker.terminate()
     this.pending.clear()
+    this.indexedKey = null
   }
 }
 
