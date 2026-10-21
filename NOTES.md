@@ -88,6 +88,41 @@ Fine for thousands of chunks; revisit only if library size becomes the bottlenec
 `npm run eval:retrieval` reports hit@k / MRR per stage; the in-app `?bench` panel runs
 the whole pipeline on the real GPU and grades answers.
 
+**Reranker device.** `RERANKER_DEVICE` (`types.ts`) can put the cross-encoder on
+WebGPU in fp16. We measured both on the dev machine: Intel Iris Xe integrated,
+Qwen 2.5 1.5B, the same three questions in the same order, with the first one
+paying any warm-up.
+
+| Question | WebGPU rerank | WebGPU focus | WASM rerank | WASM focus |
+| --- | --- | --- | --- | --- |
+| Jordan Lee's allergy (first) | 4881 ms | 286 ms | 734 ms | 364 ms |
+| Monthly rent | 212 ms | 806 ms | 772 ms | 758 ms |
+| Northwind's cash | 199 ms | 846 ms | 761 ms | 440 ms |
+
+Once warm, WebGPU runs the 8-pair rerank about 3.7× faster. It loses the focus
+pass, though: about 28 short sentence pairs, where per-dispatch overhead outweighs
+the math. Across the whole cross-encoder stage that nets only ~20%, and it costs a
+~4.9 s shader compile on the first question plus GPU memory next to the LLM.
+**WASM ships.**
+
+Trying WebGPU needs no extra runtime files. Transformers.js imports
+`onnxruntime-web/webgpu`, and in ONNX Runtime 1.26 that entry runs the WebGPU
+execution provider from the asyncify build already served under `/ort/`. The JSEP
+build fails there with `webgpuInit is not a function`.
+
+Before it opens a WebGPU session, the worker checks four things: the browser is not
+Safari (its plain build has no WebGPU provider), `navigator.gpu` exists, an adapter
+is available, and the adapter has `shader-f16`. If any check fails, the worker
+falls back to q8 on WASM with one warning, and the console names the device it
+landed on (`[localai] reranker: wasm`). One failure cannot be recovered from:
+Transformers.js chains every session create through one promise, which stays
+rejected after a failure. So a failure inside the WebGPU session create also
+breaks the WASM fallback, and fused order stands.
+
+The WebGPU path stays behind the constant for discrete GPUs and for two changes
+that could flip the result: warming the shaders at boot with a dummy pair, and
+making the focus pass fewer, longer pairs.
+
 ## Pages
 
 `extractPdfText` returns one string per page; `chunkPages` produces exactly the chunks

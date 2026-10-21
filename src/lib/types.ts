@@ -184,11 +184,12 @@ export const RERANK_MODEL_ID = 'Xenova/ms-marco-MiniLM-L-6-v2'
 /**
  * Where the cross-encoder runs. 'webgpu' loads it in fp16 on ONNX Runtime's
  * WebGPU execution provider and falls back to WASM (q8) when that load fails
- * (see `loadRerankModel` in the worker); 'wasm' never touches the GPU. Picked
- * by measuring both with `?bench` (Rerank p50 / Focus p50): see NOTES.md,
- * "Reranker device".
+ * (see `loadRerankModel` in the worker); 'wasm' never touches the GPU.
+ * WASM ships: measured on an integrated GPU, WebGPU won the rerank but lost
+ * the sentence-focus batch and added a ~5 s shader compile to the first
+ * question. NOTES.md, "Reranker device", has the numbers.
  */
-export const RERANKER_DEVICE: 'wasm' | 'webgpu' = 'webgpu'
+export const RERANKER_DEVICE: 'wasm' | 'webgpu' = 'wasm'
 
 export const TOP_K = 3
 /** Overview still stays small — long prompts dominate WebGPU prefill time. */

@@ -49,10 +49,9 @@ env.useBrowserCache = true
 // variant mirrors Transformers.js's own default: asyncify, plain for Safari.
 // The wasm cache is off because it would re-import the loader via a blob URL,
 // which the CSP forbids; same-origin files are HTTP-cached anyway.
-// The asyncify build also carries the WebGPU execution provider: Transformers.js
-// imports `onnxruntime-web/webgpu`, which drives it through `webgpuInit`. The
-// JSEP build exports `jsepInit` instead and fails there ("webgpuInit is not a
-// function"), so the WebGPU reranker needs no extra runtime files.
+// The asyncify build also carries the WebGPU execution provider that
+// Transformers.js's `onnxruntime-web/webgpu` entry uses, so a WebGPU reranker
+// needs no extra runtime files (NOTES.md, "Reranker device").
 const isSafari = /^((?!chrome|android).)*safari/i.test(self.navigator.userAgent)
 const ortVariant = isSafari ? 'ort-wasm-simd-threaded' : 'ort-wasm-simd-threaded.asyncify'
 env.useWasmCache = false
