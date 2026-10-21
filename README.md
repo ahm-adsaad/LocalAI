@@ -123,7 +123,7 @@ Both fixes are locked in by unit tests, and the eval row for each is the regress
 
 | Reranker (q8), over MiniLM hybrid, pool 8 | MB | ms/query, Node CPU | hit@1 | MRR |
 | --- | --- | --- | --- | --- |
-| none | — | — | 88.9% | 0.933 |
+| none | n/a | n/a | 88.9% | 0.933 |
 | ms-marco-TinyBERT-L-2-v2 | 4 | 72 | 86.7% | 0.926 |
 | ms-marco-MiniLM-L-4-v2 | 19 | 278 | 88.9% | 0.937 |
 | **ms-marco-MiniLM-L-6-v2** (shipped) | 23 | 262 | 93.3% | 0.959 |
@@ -172,7 +172,7 @@ Measured 2026-10-21 on the production build in Chrome on a laptop with no discre
 | CSP over promises | A privacy claim the browser enforces is worth more than one in a README. |
 | Rewrite follow-ups only when needed | The rewrite is an extra on-device generation. A cheap heuristic (pronouns, "what about", short questions) gates it so self-contained questions pay nothing. |
 | Grammar-constrained extraction | A JSON schema compiled to a decoding grammar beats "please answer in JSON" on a 1.5B model: the output always parses and never carries prose. |
-| Short prompts, small top-k | Prefill dominates WebGPU latency. Excerpts are clipped to 360 chars and k stays at 3–5 so answers start in about a second on a laptop GPU. |
+| Short prompts, small top-k | Prefill dominates WebGPU latency. Excerpts are clipped to 360 chars and k stays at 3 to 5 so answers start in about a second on a laptop GPU. |
 | No remote fallback, ever | If on-device generation fails, the UI shows the error. A silent fallback to a hosted model would break the only promise the app makes. |
 
 More in [NOTES.md](./NOTES.md).
@@ -182,9 +182,9 @@ More in [NOTES.md](./NOTES.md).
 | Piece | Choice |
 | --- | --- |
 | UI | Vite + React 19 + TypeScript + Tailwind 4 |
-| LLM | `@mlc-ai/web-llm` (MLC, WebGPU) — Qwen 2.5 / Phi-4 mini / Llama 3.2, q4f16 |
-| Embeddings | `@huggingface/transformers` — `Xenova/all-MiniLM-L6-v2`, q8, WASM |
-| Reranker | `@huggingface/transformers` — `Xenova/ms-marco-MiniLM-L-6-v2` cross-encoder, q8, WASM |
+| LLM | `@mlc-ai/web-llm` (MLC, WebGPU): Qwen 2.5 / Phi-4 mini / Llama 3.2, q4f16 |
+| Embeddings | `@huggingface/transformers`: `Xenova/all-MiniLM-L6-v2`, q8, WASM |
+| Reranker | `@huggingface/transformers`: `Xenova/ms-marco-MiniLM-L-6-v2` cross-encoder, q8, WASM |
 | Retrieval | Cosine (in-worker `Float32Array` index) + Okapi BM25 + RRF + cross-encoder, in `src/lib/` |
 | Inputs | `pdfjs-dist` (lazy) with glyph-position reading-order reconstruction and page-tagged chunks; `mammoth` (lazy) for DOCX; text and Markdown read directly |
 | Persistence | IndexedDB via `idb` |
