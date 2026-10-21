@@ -1,8 +1,11 @@
+import { sourceTitle } from './citations'
 import type { ChatSession } from './types'
 
 function safeFileStem(title: string): string {
   const stem = title
     .trim()
+    // Control characters are stripped on purpose: this becomes a filename.
+    // oxlint-disable-next-line no-control-regex
     .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, '')
     .replace(/\s+/g, '-')
     .slice(0, 48)
@@ -21,7 +24,7 @@ export function downloadChatMarkdown(session: ChatSession): void {
       lines.push('### Sources', '')
       for (const [i, s] of turn.sources.entries()) {
         lines.push(
-          `- [${i + 1}] ${s.documentName} (score ${s.score.toFixed(3)})`,
+          `- [${i + 1}] ${sourceTitle(s)} (score ${s.score.toFixed(3)})`,
           '',
           '```',
           s.text.trim(),

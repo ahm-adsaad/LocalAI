@@ -52,7 +52,14 @@ export async function checkWebGPU(): Promise<WebGPUStatus> {
 
     return {
       ok: true,
-      adapterName: info?.device || info?.description,
+      // Chrome often blanks device/description; vendor + architecture ("intel gen-12lp") still identifies the GPU class.
+      adapterName:
+        info?.device ||
+        info?.description ||
+        [info?.vendor, (info as { architecture?: string } | undefined)?.architecture]
+          .filter(Boolean)
+          .join(' ') ||
+        undefined,
       vendor: info?.vendor,
       vramMb,
       vramSource: vramMb != null ? 'adapter-info' : 'unknown',

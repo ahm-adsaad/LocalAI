@@ -1,13 +1,85 @@
-import { useEffect, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
+import { useEffect, useRef, type MouseEvent } from 'react'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { ChatTurn } from '../lib/types'
+import { linkifyCitations, sourceTitle } from '../lib/citations'
+import { formatTurnStats } from '../lib/stats'
+import type { ChatTurn, ExtractedField } from '../lib/types'
 import { IconLoader } from './Icons'
 import { Sources } from './Sources'
 
 interface MessagesProps {
   turns: ChatTurn[]
   activity?: string | null
+}
+
+/** Open and reveal the source card a citation link points at, without a page jump. */
+function jumpToSource(e: MouseEvent<HTMLAnchorElement>, href: string) {
+  e.preventDefault()
+  const el = document.getElementById(href.slice(1))
+  if (!(el instanceof HTMLDetailsElement)) return
+  el.open = true
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+}
+
+const markdownComponents: Components = {
+  a: ({ href, children, ...rest }) => {
+    if (href?.startsWith('#src-')) {
+      return (
+        <a
+          {...rest}
+          href={href}
+          onClick={(e) => jumpToSource(e, href)}
+          className="mx-0.5 inline-block rounded bg-[var(--ui-bg-elevated)] px-1 font-mono text-[10px] text-[var(--ui-primary)] no-underline hover:underline"
+        >
+          {children}
+        </a>
+      )
+    }
+    return (
+      <a {...rest} href={href} target="_blank" rel="noreferrer">
+        {children}
+      </a>
+    )
+  },
+}
+
+function ExtractionTable({ turnId, rows }: { turnId: string; rows: ExtractedField[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-[var(--ui-border)]">
+      <table className="w-full text-xs">
+        <thead className="bg-[var(--ui-bg-muted)] text-left text-[var(--ui-text-muted)]">
+          <tr>
+            <th className="px-3 py-2 font-medium">Field</th>
+            <th className="px-3 py-2 font-medium">Value</th>
+            <th className="px-3 py-2 font-medium">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name} className="border-t border-[var(--ui-border)]">
+              <td className="px-3 py-2 font-medium text-[var(--ui-text-highlighted)]">{r.name}</td>
+              <td className="px-3 py-2 text-[var(--ui-text)]">
+                {r.value ?? <span className="text-[var(--ui-text-dimmed)]">not found</span>}
+              </td>
+              <td className="px-3 py-2">
+                {r.source != null ? (
+                  <a
+                    href={`#src-${turnId}-${r.source}`}
+                    onClick={(e) => jumpToSource(e, `#src-${turnId}-${r.source}`)}
+                    className="rounded bg-[var(--ui-bg-elevated)] px-1 font-mono text-[10px] text-[var(--ui-primary)] hover:underline"
+                  >
+                    [{r.source}]
+                  </a>
+                ) : (
+                  <span className="text-[var(--ui-text-dimmed)]">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 export function Messages({ turns, activity }: MessagesProps) {
@@ -37,14 +109,34 @@ export function Messages({ turns, activity }: MessagesProps) {
                   <IconLoader size={14} />
                   {activity ?? 'Thinking…'}
                 </span>
+              ) : t.extraction ? (
+                <ExtractionTable turnId={t.id} rows={t.extraction} />
               ) : (
                 <div className="prose-chat">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {t.streaming ? `${t.content} ▍` : t.content}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                    {t.streaming
+                      ? `${t.content} ▍`
+                      : linkifyCitations(
+                        t.content,
+                        t.sources?.length ?? 0,
+                        t.id,
+                        t.sources?.map(sourceTitle),
+                      )}
                   </ReactMarkdown>
                 </div>
               )}
-              {t.sources ? <Sources sources={t.sources} /> : null}
+              {t.sources ? (
+                <Sources turnId={t.id} sources={t.sources} retrievalQuery={t.retrievalQuery} />
+              ) : null}
+              {t.stats && !t.streaming ? (
+                <p
+                  className="mt-2 font-mono text-[10px] text-[var(--ui-text-dimmed)]"
+                  title={`${t.stats.modelId} · ${t.stats.completionTokens} completion tokens · ${Math.round(t.stats.totalMs)} ms total`}
+                >
+                  {formatTurnStats(t.stats)}
+                  {t.aborted ? ' · stopped' : ''}
+                </p>
+              ) : null}
             </div>
           ),
         )}

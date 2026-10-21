@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from 'react'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { IconFileText, Logo } from './components/Icons'
 import { Messages } from './components/Messages'
@@ -7,7 +16,6 @@ import { ProgressBar } from './components/ProgressBar'
 import { PromptInput } from './components/PromptInput'
 import { Sidebar } from './components/Sidebar'
 import { WebGPUGate } from './components/WebGPUGate'
-import { chunkText } from './lib/chunking'
 import {
   adoptOrphanDocuments,
   clearChatLibrary,
@@ -21,7 +29,6 @@ import {
   listChats,
   listDocumentsForChat,
   saveChat,
-  saveDocumentWithChunks,
   setActiveChatId,
   setPreferredModelTier,
   titleFromDocumentName,
@@ -35,20 +42,26 @@ import {
   resolveModelOptionId,
   type ModelOptionId,
 } from './lib/models'
-import { extractPdfText } from './lib/pdf'
-import { buildPlainChatMessages, buildRagMessages } from './lib/prompt'
-import { embeddingQueryFor, hybridRank, selectRagSources } from './lib/rag'
+import { extractionToMarkdown } from './lib/extract'
+import { ingestPdf } from './lib/ingest'
+import { answerQuestion } from './lib/pipeline'
 import type {
+  ChatMessage,
   ChatSession,
   ChatTurn,
   DocumentMeta,
   ModelPhase,
-  RankedChunk,
   StoredChunk,
 } from './lib/types'
-import { HYBRID_CANDIDATE_POOL } from './lib/types'
 import { checkWebGPU, type WebGPUStatus } from './lib/webgpu'
 import { getWorkerClient } from './lib/workerClient'
+
+/** Dev/bench tooling stays out of the main bundle; opened with `?bench`. */
+const BenchPanel = lazy(() => import('./components/BenchPanel'))
+const urlParams = new URLSearchParams(window.location.search)
+const benchRequested = urlParams.has('bench')
+/** `?model=qwen-fast` pins the boot model (used by the e2e privacy audit). */
+const urlModel = urlParams.get('model')
 
 function uid() {
   return crypto.randomUUID()
@@ -108,6 +121,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
+  const [benchOpen, setBenchOpen] = useState(benchRequested)
   const [dragActive, setDragActive] = useState(false)
   const dragDepth = useRef(0)
 
@@ -245,7 +259,7 @@ export default function App() {
         if (!modelBootPromise) {
           modelBootPromise = (async () => {
             const saved = await getPreferredModelTier()
-            const initial = resolveModelOptionId(saved) ?? suggested
+            const initial = resolveModelOptionId(urlModel) ?? resolveModelOptionId(saved) ?? suggested
             const spec = MODEL_OPTIONS[initial]
             const fanout: BootProgress = (p) => {
               for (const cb of bootProgressSubs) cb(p)
@@ -311,36 +325,7 @@ export default function App() {
       await saveChat(chat)
       await setActiveChatId(chat.id)
 
-      const { text, pageCount } = await extractPdfText(file)
-      if (!text.trim()) {
-        throw new Error('No extractable text in this PDF (it may be image-only).')
-      }
-
-      const parts = chunkText(text)
-      setIngestMsg(`Embedding ${parts.length} chunks on-device…`)
-
-      const embeddings = await worker.embed(parts)
-      const documentId = uid()
-      const stored: StoredChunk[] = parts.map((part, i) => ({
-        id: `${documentId}-${i}`,
-        documentId,
-        documentName: file.name,
-        index: i,
-        text: part,
-        embedding: embeddings[i] ?? [],
-      }))
-
-      const meta: DocumentMeta = {
-        id: documentId,
-        chatId: chat.id,
-        name: file.name,
-        pageCount,
-        chunkCount: stored.length,
-        createdAt: Date.now(),
-        sizeBytes: file.size,
-      }
-
-      await saveDocumentWithChunks(meta, stored)
+      const { chunks: stored } = await ingestPdf(file, chat.id, worker, setIngestMsg)
 
       // Name empty chats after their first PDF.
       if (chat.title === 'New chat' || chat.turns.length === 0) {
@@ -474,35 +459,20 @@ export default function App() {
     }
 
     try {
-      let sources: RankedChunk[] = []
-      let messages
-      const historyTurns = sessionRef.current.turns.filter((t) => !t.streaming)
+      const history: ChatMessage[] = sessionRef.current.turns
+        .filter((t) => !t.streaming && t.content.trim())
+        .map((t) => ({ role: t.role, content: t.content }))
 
-      // RAG only over PDFs attached to this chat.
-      if (chunks.length > 0) {
-        setActivity('Retrieving…')
-        const pool = Math.min(HYBRID_CANDIDATE_POOL, chunks.length)
-        const scored = await worker.search(
-          embeddingQueryFor(text),
-          chunks.map((c) => ({ id: c.id, embedding: c.embedding })),
-          pool,
-        )
-        // Cosine (worker) + BM25 (main thread) → RRF fuse → prose/overview select.
-        const ranked = hybridRank(text, chunks, scored)
-        sources = selectRagSources(text, chunks, ranked)
-        messages = buildRagMessages(text, sources)
-      } else {
-        messages = buildPlainChatMessages(
-          historyTurns.map((t) => ({
-            role: t.role as 'user' | 'assistant',
-            content: t.content,
-          })),
-          text,
-        )
-      }
-
-      setActivity('Generating…')
-      await worker.generate(messages, { stream: true, onToken })
+      // RAG only over PDFs attached to this chat; plain chat otherwise.
+      const result = await answerQuestion({
+        worker,
+        chunks,
+        history,
+        text,
+        modelId: MODEL_OPTIONS[selectedModel].modelId,
+        onToken,
+        onActivity: setActivity,
+      })
       if (raf) cancelAnimationFrame(raf)
       flushTokens()
 
@@ -515,7 +485,12 @@ export default function App() {
               ? {
                   ...t,
                   streaming: false,
-                  sources: sources.length > 0 ? sources : undefined,
+                  content: result.extraction ? extractionToMarkdown(result.extraction) : t.content,
+                  sources: result.sources.length > 0 ? result.sources : undefined,
+                  stats: result.stats,
+                  retrievalQuery: result.retrievalQuery,
+                  extraction: result.extraction,
+                  aborted: result.aborted || undefined,
                 }
               : t,
           ),
@@ -777,6 +752,29 @@ export default function App() {
           ) : null}
         </div>
       </div>
+
+      {benchOpen ? (
+        <div className="hidden shrink-0 py-2 pr-2 lg:block">
+          <div className="h-full overflow-hidden rounded-xl border border-[var(--ui-border)] shadow-sm">
+            <Suspense fallback={null}>
+              <BenchPanel
+                worker={worker}
+                chatId={session.id}
+                chunks={chunks}
+                modelId={MODEL_OPTIONS[selectedModel].modelId}
+                modelLabel={MODEL_OPTIONS[selectedModel].label}
+                adapterName={gpu.adapterName}
+                ready={modelsReady && !chatBusy}
+                onIngested={async () => {
+                  await loadChatLibrary(session.id)
+                  await refreshChats()
+                }}
+                onClose={() => setBenchOpen(false)}
+              />
+            </Suspense>
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={pendingConfirm?.kind === 'delete-chat'}
