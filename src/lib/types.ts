@@ -181,6 +181,14 @@ export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2'
  * `npm run eval:models` (see eval/results/models.md); also WASM, also on-device.
  */
 export const RERANK_MODEL_ID = 'Xenova/ms-marco-MiniLM-L-6-v2'
+/**
+ * Where the cross-encoder runs. 'webgpu' loads it in fp16 on ONNX Runtime's
+ * WebGPU execution provider and falls back to WASM (q8) when that load fails
+ * (see `loadRerankModel` in the worker); 'wasm' never touches the GPU. Picked
+ * by measuring both with `?bench` (Rerank p50 / Focus p50): see NOTES.md,
+ * "Reranker device".
+ */
+export const RERANKER_DEVICE: 'wasm' | 'webgpu' = 'webgpu'
 
 export const TOP_K = 3
 /** Overview still stays small — long prompts dominate WebGPU prefill time. */

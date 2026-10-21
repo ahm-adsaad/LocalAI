@@ -31,6 +31,7 @@ import {
   EMBED_MODEL_ID,
   MAX_NEW_TOKENS,
   RERANK_MODEL_ID,
+  RERANKER_DEVICE,
   type ChatMessage,
   type GenerateOptions,
   type GenerationStats,
@@ -48,9 +49,12 @@ env.useBrowserCache = true
 // variant mirrors Transformers.js's own default: asyncify, plain for Safari.
 // The wasm cache is off because it would re-import the loader via a blob URL,
 // which the CSP forbids; same-origin files are HTTP-cached anyway.
-const ortVariant = /^((?!chrome|android).)*safari/i.test(self.navigator.userAgent)
-  ? 'ort-wasm-simd-threaded'
-  : 'ort-wasm-simd-threaded.asyncify'
+// The asyncify build also carries the WebGPU execution provider: Transformers.js
+// imports `onnxruntime-web/webgpu`, which drives it through `webgpuInit`. The
+// JSEP build exports `jsepInit` instead and fails there ("webgpuInit is not a
+// function"), so the WebGPU reranker needs no extra runtime files.
+const isSafari = /^((?!chrome|android).)*safari/i.test(self.navigator.userAgent)
+const ortVariant = isSafari ? 'ort-wasm-simd-threaded' : 'ort-wasm-simd-threaded.asyncify'
 env.useWasmCache = false
 if (env.backends.onnx.wasm) {
   env.backends.onnx.wasm.wasmPaths = {
@@ -172,10 +176,7 @@ async function loadReranker(onProgress?: (p: number, text: string) => void): Pro
         }
       }
       const tokenizer = await AutoTokenizer.from_pretrained(RERANK_MODEL_ID, { progress_callback })
-      const model = await AutoModelForSequenceClassification.from_pretrained(RERANK_MODEL_ID, {
-        dtype: 'q8',
-        progress_callback,
-      })
+      const model = await loadRerankModel(progress_callback)
       reranker = { tokenizer, model }
       return reranker
     })().catch((err) => {
@@ -184,6 +185,51 @@ async function loadReranker(onProgress?: (p: number, text: string) => void): Pro
     })
   }
   return rerankInitPromise
+}
+
+/**
+ * The cross-encoder on the device RERANKER_DEVICE names: fp16 on WebGPU when
+ * asked for, q8 on WASM otherwise or if the GPU load fails for any reason.
+ * Logs which one it ended up on.
+ */
+async function loadRerankModel(progress_callback: (data: ProgressData) => void): Promise<PreTrainedModel> {
+  if (RERANKER_DEVICE === 'webgpu') {
+    try {
+      const model = await loadRerankModelOnWebGPU(progress_callback)
+      console.info('[localai] reranker: webgpu')
+      return model
+    } catch (err) {
+      console.warn('[localai] reranker: WebGPU load failed, falling back to WASM', err)
+    }
+  }
+  const model = await AutoModelForSequenceClassification.from_pretrained(RERANK_MODEL_ID, {
+    dtype: 'q8',
+    progress_callback,
+  })
+  console.info('[localai] reranker: wasm')
+  return model
+}
+
+/**
+ * Checks what it can before asking for a WebGPU session. Transformers.js
+ * chains session creation through one promise that stays rejected once a
+ * create fails, so after a failed WebGPU create the WASM fallback (and any
+ * later model load in this worker) fails with the same error. Failures caught
+ * here, or while fetching the fp16 weights, happen before that chain.
+ */
+async function loadRerankModelOnWebGPU(
+  progress_callback: (data: ProgressData) => void,
+): Promise<PreTrainedModel> {
+  if (isSafari) throw new Error('Safari runs the ONNX Runtime build without WebGPU')
+  if (!('gpu' in self.navigator)) throw new Error('no navigator.gpu in this worker')
+  const adapter = await self.navigator.gpu.requestAdapter({ powerPreference: 'high-performance' })
+  if (!adapter) throw new Error('no WebGPU adapter')
+  if (!adapter.features.has('shader-f16')) throw new Error('the WebGPU adapter lacks shader-f16')
+  return AutoModelForSequenceClassification.from_pretrained(RERANK_MODEL_ID, {
+    device: 'webgpu',
+    dtype: 'fp16',
+    progress_callback,
+  })
 }
 
 /** One logit per (question, chunk) pair; higher means more relevant. */
