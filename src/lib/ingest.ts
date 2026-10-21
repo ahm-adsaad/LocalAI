@@ -1,6 +1,6 @@
-import { chunkPages } from './chunking'
+import { chunkPages, chunkText } from './chunking'
 import { saveDocumentWithChunks } from './db'
-import { extractPdfText } from './pdf'
+import { extractDocument } from './documents'
 import type { DocumentMeta, StoredChunk } from './types'
 import type { WorkerClient } from './workerClient'
 
@@ -15,12 +15,14 @@ export async function ingestPdf(
   onStatus?: (status: string) => void,
 ): Promise<{ meta: DocumentMeta; chunks: StoredChunk[] }> {
   onStatus?.(`Reading ${file.name}…`)
-  const { pages, pageCount } = await extractPdfText(file)
-  if (!pages.join('').trim()) {
-    throw new Error('No extractable text in this PDF (it may be image-only).')
+  const { pages, text, pageCount } = await extractDocument(file)
+  if (!text.trim()) {
+    throw new Error('No extractable text in this document (a PDF may be image-only).')
   }
 
-  const parts = chunkPages(pages)
+  const parts: { text: string; pageStart?: number; pageEnd?: number }[] = pages
+    ? chunkPages(pages)
+    : chunkText(text).map((t) => ({ text: t }))
   onStatus?.(`Embedding ${parts.length} chunks on-device…`)
   const embeddings = await worker.embed(
     parts.map((p) => p.text),

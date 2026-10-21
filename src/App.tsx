@@ -46,6 +46,7 @@ import {
 } from './lib/models'
 import { extractionToMarkdown } from './lib/extract'
 import { ingestPdf } from './lib/ingest'
+import { isSupportedFile } from './lib/inputs'
 import { answerQuestion } from './lib/pipeline'
 import type {
   ChatMessage,
@@ -608,11 +609,9 @@ export default function App() {
     e.preventDefault()
     dragDepth.current = 0
     setDragActive(false)
-    const file = Array.from(e.dataTransfer.files).find(
-      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
-    )
+    const file = Array.from(e.dataTransfer.files).find(isSupportedFile)
     if (file) void handleUpload(file)
-    else setIngestMsg('Only PDF files can be added to a chat.')
+    else setIngestMsg('Only PDF, text, Markdown or DOCX files can be added to a chat.')
   }
 
   if (!gpu) {

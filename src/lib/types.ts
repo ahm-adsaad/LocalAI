@@ -11,6 +11,7 @@ export interface DocumentMeta {
   /** Each PDF belongs to one chat — switching chats switches the library. */
   chatId: string
   name: string
+  /** 0 means unpaged (text and Markdown files). */
   pageCount: number
   chunkCount: number
   createdAt: number

@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
+import { ACCEPTED_EXTENSIONS } from '../lib/inputs'
 import type { ModelOptionId } from '../lib/models'
 import type { DocumentMeta } from '../lib/types'
 import {
@@ -85,14 +86,16 @@ export function PromptInput({
           {documents.map((doc) => (
             <span
               key={doc.id}
-              title={`${doc.name} · ${doc.pageCount} pages · ${doc.chunkCount} chunks`}
+              title={`${doc.name} · ${doc.pageCount > 0 ? `${doc.pageCount} pages · ` : ''}${doc.chunkCount} chunks`}
               className="group flex max-w-60 items-center gap-1.5 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] py-1 pr-1 pl-2 text-xs text-[var(--ui-text)]"
             >
               <IconFileText size={13} className="shrink-0 text-[var(--ui-text-dimmed)]" />
               <span className="min-w-0 truncate font-medium">{doc.name}</span>
-              <span className="shrink-0 font-mono text-[10px] text-[var(--ui-text-dimmed)]">
-                {doc.pageCount}p
-              </span>
+              {doc.pageCount > 0 ? (
+                <span className="shrink-0 font-mono text-[10px] text-[var(--ui-text-dimmed)]">
+                  {doc.pageCount}p
+                </span>
+              ) : null}
               <button
                 type="button"
                 disabled={ingestBusy || generating}
@@ -141,7 +144,7 @@ export function PromptInput({
         <input
           ref={fileRef}
           type="file"
-          accept="application/pdf"
+          accept={ACCEPTED_EXTENSIONS}
           className="sr-only"
           disabled={disabled || ingestBusy}
           onChange={(e) => {
