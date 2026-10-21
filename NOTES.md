@@ -38,8 +38,11 @@ is Qwen 3B / Phi-4 mini / Llama 3B, then Qwen 1.5B, then Qwen 0.5B, then the err
 is shown. A fallback must have at most 75% of the failed model's VRAM estimate, so a
 retry is a real step down and not a near-tie. The notice reads "<failed> did not fit in
 this GPU's memory; using <used> instead.", and the failed model is never written as the
-saved preference, so the next visit tries it again. This is verified end to end only
-through the synthetic `?simulateOom=<modelOptionId>` hook (`e2e/fallback.spec.ts`).
+saved preference; the model that loaded is, so the next visit boots the smaller model
+directly, and choosing the larger model in the menu tries it again. This is verified end
+to end only through the synthetic `?simulateOom=<modelOptionId>` hook
+(`e2e/fallback.spec.ts`). That hook is a test hook that is live in production builds and,
+like `?model=`, persists its effect only as the saved smaller model.
 A real out-of-memory depends on `isGpuMemoryFailure` matching the message the worker
 actually throws, which has not been reproduced on a small GPU.
 
@@ -113,9 +116,10 @@ paying any warm-up.
 | Northwind's cash | 199 ms | 846 ms | 761 ms | 440 ms |
 
 Once warm, WebGPU runs the 8-pair rerank about 3.7× faster. It loses the focus
-pass, though: about 28 short sentence pairs, where per-dispatch overhead outweighs
-the math. Across the whole cross-encoder stage that nets only ~20%, and it costs a
-~4.9 s shader compile on the first question plus GPU memory next to the LLM.
+pass, though: about 28 pairs on these questions (varying per question), where
+per-dispatch overhead likely outweighs the math. Across the whole cross-encoder stage
+that nets 15 to 25% depending on how you average, and it costs a first rerank of about
+4.9 s, mostly one-off shader compilation, plus GPU memory next to the LLM.
 **WASM ships.**
 
 Trying WebGPU needs no extra runtime files. Transformers.js imports
@@ -148,8 +152,8 @@ this change have no page fields; everything degrades to the filename.
 ## Inputs
 
 `inputs.ts` accepts `.pdf`, `.txt`, `.md`/`.markdown` and `.docx`; `documents.ts`
-turns each into the page strings the chunker already takes. Text and Markdown are one
-unpaged document, so their citations carry no page label. DOCX goes through mammoth,
+extracts each. Only PDFs yield page strings; text, Markdown and DOCX go through
+`chunkText` as one unpaged document, so their citations carry no page label. DOCX goes through mammoth,
 which is imported only when a DOCX is dropped; pdf.js is now loaded the same way, so
 neither parser is in the initial bundle. A PDF with no text layer (a scan) and an empty
 DOCX hit the same "No extractable text" message. OCR is deferred: tesseract.js would
