@@ -39,9 +39,12 @@ describe('formatTurnStats', () => {
       totalMs: 4300,
       retrievalMs: 12,
       rerankMs: 41,
+      focusMs: 37,
       condenseMs: null,
     })
-    expect(line).toBe('18.3 tok/s · TTFT 0.9 s · 410 prompt tok · retrieval 12 ms · rerank 41 ms')
+    expect(line).toBe(
+      '18.3 tok/s · TTFT 0.9 s · 410 prompt tok · retrieval 12 ms · rerank 41 ms · focus 37 ms',
+    )
   })
 
   it('omits sections whose data is missing', () => {
@@ -55,6 +58,7 @@ describe('formatTurnStats', () => {
       totalMs: 1000,
       retrievalMs: null,
       rerankMs: null,
+      focusMs: null,
       condenseMs: 650,
     })
     expect(line).toBe('5.0 tok/s · rewrite 650 ms')

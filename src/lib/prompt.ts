@@ -2,6 +2,7 @@ import type { ChatMessage, RankedChunk } from './types'
 import { EXCERPT_MAX_CHARS } from './types'
 import { tokenize } from './bm25'
 import { pageLabel } from './citations'
+import { sentenceEndAt } from './focus'
 import { isOverviewQuery } from './rag'
 
 /** Prior *user* questions carried into the RAG prompt so follow-ups read naturally. */
@@ -87,8 +88,16 @@ function bestWindowStart(text: string, max: number, terms: string[]): number {
  * slides to the span that mentions the question's terms — a chunk is 700
  * chars but the prompt budget is 360, and the eval showed that clipping from
  * the head silently dropped the answering sentence for facts late in a chunk.
+ * With `anchor` (an offset into `text.trim()`, from focus.ts), the sentence at
+ * that offset must survive too: it is merged into the window when they touch,
+ * otherwise added as a capped second part.
  */
-export function clipExcerpt(text: string, max = EXCERPT_MAX_CHARS, focus?: string): string {
+export function clipExcerpt(
+  text: string,
+  max = EXCERPT_MAX_CHARS,
+  focus?: string,
+  anchor?: number,
+): string {
   const t = text.trim()
   if (t.length <= max) return t
 
@@ -104,9 +113,50 @@ export function clipExcerpt(text: string, max = EXCERPT_MAX_CHARS, focus?: strin
     if (at !== -1) keepThrough = Math.max(keepThrough, at + term.length)
   }
 
-  const body =
-    start + max >= t.length ? slice.trimEnd() : `${cutAtBoundary(slice, max, keepThrough)}…`
-  return start > 0 ? `…${body}` : body
+  const kept = start + max >= t.length ? slice.trimEnd() : cutAtBoundary(slice, max, keepThrough)
+  const windowEnd = start + kept.length
+
+  // The lexical window and the semantic anchor (focus.ts) fail on different
+  // questions: literal terms miss a paraphrased answer, the cross-encoder
+  // misses a literal cue. Neither wins on the eval; showing the model both
+  // when they disagree does. Agreement costs nothing extra.
+  if (anchor == null || anchor < 0 || anchor >= t.length) return excerptOf(t, start, windowEnd)
+
+  const sentenceEnd = anchor + t.slice(anchor, sentenceEndAt(t, anchor)).trimEnd().length
+  const capped = capSentence(t, anchor, sentenceEnd)
+  if (anchor >= start && sentenceEnd <= windowEnd) return excerptOf(t, start, windowEnd)
+
+  // Overlapping or adjacent: one contiguous excerpt, so nothing is shown twice.
+  const gap = anchor < start ? t.slice(capped, start) : t.slice(windowEnd, anchor)
+  if (gap.trim() === '') {
+    return excerptOf(t, Math.min(start, anchor), Math.max(windowEnd, capped))
+  }
+
+  // Disjoint: window plus the sentence, in document order, one ellipsis line
+  // between them and no ellipsis on the sides that face it.
+  const sentence = t.slice(anchor, capped).replace(/\s+/g, ' ').trim()
+  if (anchor < start) {
+    return `${anchor > 0 ? '…' : ''}${sentence}\n…\n${kept}${windowEnd < t.length ? '…' : ''}`
+  }
+  const tail = capped < sentenceEnd || sentenceEnd < t.length ? '…' : ''
+  return `${start > 0 ? '…' : ''}${kept}\n…\n${sentence}${tail}`
+}
+
+/** Extra room an anchored sentence may add to a clipped excerpt. */
+const ANCHOR_MAX_CHARS = 160
+
+/** Where to cut an over-long anchored sentence: at a word, in the second half of the allowance. */
+function capSentence(text: string, start: number, end: number): number {
+  if (end - start <= ANCHOR_MAX_CHARS) return end
+  const limit = start + ANCHOR_MAX_CHARS
+  const space = text.lastIndexOf(' ', limit)
+  return space > start + ANCHOR_MAX_CHARS / 2 ? space : limit
+}
+
+/** `text[from, to)` with an ellipsis on each side that is not the chunk's edge. */
+function excerptOf(text: string, from: number, to: number): string {
+  const body = text.slice(from, to).trim()
+  return `${from > 0 ? '…' : ''}${body}${to < text.length ? '…' : ''}`
 }
 
 /** "[1] name (p. 3)\ntext" blocks, numbered to match the citation markers we ask for. */
@@ -115,7 +165,7 @@ export function formatExcerpts(sources: RankedChunk[], focus?: string): string {
     .map((s, i) => {
       const page = pageLabel(s)
       const header = `[${i + 1}] ${s.documentName}${page ? ` (${page})` : ''}`
-      return `${header}\n${clipExcerpt(s.text, EXCERPT_MAX_CHARS, focus)}`
+      return `${header}\n${clipExcerpt(s.text, EXCERPT_MAX_CHARS, focus, s.focusStart)}`
     })
     .join('\n\n')
 }

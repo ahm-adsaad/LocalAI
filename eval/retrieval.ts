@@ -16,16 +16,19 @@
  *   selected    — reranked + prose-aware selection (the chunks that go to the prompt)
  *   excerptHead — selected chunks clipped from the head to the prompt budget
  *                 (the original behaviour): does the fact survive into the prompt?
- *   excerpt     — selected chunks clipped with the query-focused window
+ *   excerptLexical — selected chunks clipped to the window with the most question terms
+ *   excerpt     — selected chunks clipped around the sentence the cross-encoder
+ *                 rates most relevant (the shipped behaviour)
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pipeline, env } from '@huggingface/transformers'
 import { bm25Scores } from '../src/lib/bm25'
 import { chunkPages } from '../src/lib/chunking'
+import { applyFocus, focusPairs } from '../src/lib/focus'
 import { firstRelevantRank, hitRateAtK, meanReciprocalRank } from '../src/lib/metrics'
 import { clipExcerpt } from '../src/lib/prompt'
-import { embeddingQueryFor, hybridRank, selectRagSources } from '../src/lib/rag'
+import { embeddingQueryFor, hybridRank, isOverviewQuery, selectRagSources } from '../src/lib/rag'
 import { mergeRerank, rerankPairs, RERANK_POOL } from '../src/lib/rerank'
 import {
   EMBED_MODEL_ID,
@@ -47,8 +50,25 @@ import {
   type GoldenItem,
 } from './corpus'
 
-type Strategy = 'dense' | 'bm25' | 'hybrid' | 'reranked' | 'selected' | 'excerptHead' | 'excerpt'
-const STRATEGIES: Strategy[] = ['dense', 'bm25', 'hybrid', 'reranked', 'selected', 'excerptHead', 'excerpt']
+type Strategy =
+  | 'dense'
+  | 'bm25'
+  | 'hybrid'
+  | 'reranked'
+  | 'selected'
+  | 'excerptHead'
+  | 'excerptLexical'
+  | 'excerpt'
+const STRATEGIES: Strategy[] = [
+  'dense',
+  'bm25',
+  'hybrid',
+  'reranked',
+  'selected',
+  'excerptHead',
+  'excerptLexical',
+  'excerpt',
+]
 const KS = [1, 3, 5]
 type Group = 'single' | 'followup'
 
@@ -118,6 +138,8 @@ async function main() {
     followup: emptyRanks(),
   }
   const misses: string[] = []
+  // Prompt cost of each clipping policy, so a quality gain is never free by accident.
+  const excerptChars = { lexical: 0, shipped: 0, count: 0 }
   const byId = new Map(chunks.map((c) => [c.id, c]))
 
   for (const item of golden.items) {
@@ -144,16 +166,38 @@ async function main() {
     const reranked = mergeRerank(hybrid, await score(rerankPairs(question, hybrid, RERANK_POOL)))
     const selected = selectRagSources(question, chunks, reranked)
     const selectedIds = selected.map((s) => s.id)
+    // Sentence-level focus for the excerpts that will be clipped, exactly as the
+    // app does it (pipeline.ts skips it for overview questions).
+    const overview = isOverviewQuery(question)
+    const focus = overview ? { pairs: [], spans: [] } : focusPairs(question, selected)
+    const focused =
+      focus.pairs.length > 0 ? applyFocus(selected, focus.spans, await score(focus.pairs)) : selected
+    const focusStart = new Map(focused.map((s) => [s.id, s.focusStart]))
+    // Overview excerpts keep the head of the chunk, as buildRagMessages does.
+    const clipFocus = overview ? undefined : question
 
     const rel = (id: string) => isRelevant(item, byId.get(id)!)
     // Same chunks, but judged on the clipped text the prompt will contain.
-    const excerptRel = (id: string) => {
-      const c = byId.get(id)!
-      return textIsRelevant(item, c.documentId, clipExcerpt(c.text, EXCERPT_MAX_CHARS, question))
-    }
     const excerptHeadRel = (id: string) => {
       const c = byId.get(id)!
       return textIsRelevant(item, c.documentId, clipExcerpt(c.text, EXCERPT_MAX_CHARS))
+    }
+    const excerptLexicalRel = (id: string) => {
+      const c = byId.get(id)!
+      return textIsRelevant(item, c.documentId, clipExcerpt(c.text, EXCERPT_MAX_CHARS, clipFocus))
+    }
+    const excerptRel = (id: string) => {
+      const c = byId.get(id)!
+      return textIsRelevant(
+        item,
+        c.documentId,
+        clipExcerpt(c.text, EXCERPT_MAX_CHARS, clipFocus, focusStart.get(id)),
+      )
+    }
+    for (const s of selected) {
+      excerptChars.lexical += clipExcerpt(s.text, EXCERPT_MAX_CHARS, clipFocus).length
+      excerptChars.shipped += clipExcerpt(s.text, EXCERPT_MAX_CHARS, clipFocus, focusStart.get(s.id)).length
+      excerptChars.count += 1
     }
     const r: Record<Strategy, number | null> = {
       dense: firstRelevantRank(denseIds, rel),
@@ -162,6 +206,7 @@ async function main() {
       reranked: firstRelevantRank(reranked.map((h) => h.id), rel),
       selected: firstRelevantRank(selectedIds, rel),
       excerptHead: firstRelevantRank(selectedIds, excerptHeadRel),
+      excerptLexical: firstRelevantRank(selectedIds, excerptLexicalRel),
       excerpt: firstRelevantRank(selectedIds, excerptRel),
     }
     for (const s of STRATEGIES) ranks[group][s].push(r[s])
@@ -200,6 +245,8 @@ async function main() {
     `These depend on earlier turns ("when does *her* lease end?"). This is the baseline the in-app question rewriting is measured against.`,
     ``,
     followup.md,
+    ``,
+    `Mean excerpt length: lexical window ${(excerptChars.lexical / excerptChars.count).toFixed(0)} chars, shipped (window + anchored sentence on disagreement) ${(excerptChars.shipped / excerptChars.count).toFixed(0)} chars.`,
     ``,
     misses.length
       ? `## Misses at the excerpt level\n\n${misses.map((m) => `- ${m}`).join('\n')}`

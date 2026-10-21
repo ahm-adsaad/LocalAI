@@ -69,12 +69,20 @@ Hybrid retrieval in the browser — no external vector DB:
    embedder. If the reranker fails to load (offline first run), fused order stands.
 5. **Select:** the only post-step defers number-soup chunks behind prose ones (top hit
    always kept).
-6. **Clip:** each excerpt is cut to 360 chars for prefill, but the window slides
-   to the sentence matching the question (rare query terms weigh more, and the
-   cut never lands before a matched term). Head-clipping delivered the fact to the
-   model for only 45% of golden questions; focused clipping delivers it for 97.8%.
-   The one miss is a paraphrase ("blood pressure" vs "hypertension") the lexical
-   window cannot see; scoring candidate windows with the cross-encoder is the next step.
+6. **Clip:** each excerpt is cut to 360 chars for prefill. Two signals pick what
+   survives: the lexical window (the boundary-aligned span holding the most
+   rarity-weighted question terms; the cut never lands before a matched term) and
+   the semantic anchor (`focus.ts`: the cross-encoder scores each *sentence* of a
+   chunk that needs clipping; windows were too diluted to score). If the anchored
+   sentence already sits in the window, that is the excerpt; if not, the excerpt
+   is the window plus that one sentence (capped at 160 chars), in document order.
+   Head-clipping delivered the fact for 46.7% of golden questions, the lexical
+   window for 97.8%, both signals for 100%, at 281 → 296 mean chars. Neither
+   signal alone reaches 100%: the lexical window loses "Lisinopril … for
+   hypertension" to the literal "blood pressure" line, the cross-encoder loses
+   "$21.3 million in cash" to a revenue sentence it likes better, and no fixed
+   blend satisfies both. Sentence splitting treats a PDF line break as a boundary
+   only after punctuation or a heading-sized line, and never after "Dr." and co.
 
 Fine for thousands of chunks; revisit only if library size becomes the bottleneck.
 `npm run eval:retrieval` reports hit@k / MRR per stage; the in-app `?bench` panel runs

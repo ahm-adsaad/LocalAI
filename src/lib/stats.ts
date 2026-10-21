@@ -31,6 +31,7 @@ export function formatTurnStats(stats: TurnStats): string {
   if (stats.promptTokens != null) parts.push(`${stats.promptTokens} prompt tok`)
   if (stats.retrievalMs != null) parts.push(`retrieval ${Math.round(stats.retrievalMs)} ms`)
   if (stats.rerankMs != null) parts.push(`rerank ${Math.round(stats.rerankMs)} ms`)
+  if (stats.focusMs != null) parts.push(`focus ${Math.round(stats.focusMs)} ms`)
   if (stats.condenseMs != null) parts.push(`rewrite ${Math.round(stats.condenseMs)} ms`)
   return parts.join(' · ')
 }

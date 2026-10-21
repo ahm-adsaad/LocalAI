@@ -12,7 +12,8 @@ Corpus: 4 PDFs, 22 chunks. Embedder: Xenova/all-MiniLM-L6-v2. Reranker: Xenova/m
 | reranked | 93.3% | 100.0% | 100.0% | 0.959 |
 | selected | 93.3% | 100.0% | 100.0% | 0.959 |
 | excerptHead | 40.0% | 46.7% | 46.7% | 0.426 |
-| excerpt | 93.3% | 97.8% | 97.8% | 0.952 |
+| excerptLexical | 93.3% | 97.8% | 97.8% | 0.952 |
+| excerpt | 93.3% | 100.0% | 100.0% | 0.959 |
 
 ## Follow-up questions asked verbatim, without rewriting (n=4)
 
@@ -26,8 +27,9 @@ These depend on earlier turns ("when does *her* lease end?"). This is the baseli
 | reranked | 100.0% | 100.0% | 100.0% | 1.000 |
 | selected | 100.0% | 100.0% | 100.0% | 1.000 |
 | excerptHead | 75.0% | 75.0% | 75.0% | 0.750 |
+| excerptLexical | 100.0% | 100.0% | 100.0% | 1.000 |
 | excerpt | 100.0% | 100.0% | 100.0% | 1.000 |
 
-## Misses at the excerpt level
+Mean excerpt length: lexical window 281 chars, shipped (window + anchored sentence on disagreement) 296 chars.
 
-- clinic-11 (single): dense=4 bm25=3 hybrid=3 reranked=3 selected=3
+No misses in the selected set.

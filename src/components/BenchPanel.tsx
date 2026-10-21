@@ -160,6 +160,7 @@ export default function BenchPanel({
                 totalMs: 0,
                 retrievalMs: null,
                 rerankMs: null,
+                focusMs: null,
                 condenseMs: null,
               },
             },
@@ -186,13 +187,14 @@ export default function BenchPanel({
     total: median(rows.map((r) => r.stats.totalMs).filter((x) => x > 0)),
     retrievalMs: median(rows.map((r) => r.stats.retrievalMs).filter((x): x is number => x != null)),
     rerankMs: median(rows.map((r) => r.stats.rerankMs).filter((x): x is number => x != null)),
+    focusMs: median(rows.map((r) => r.stats.focusMs).filter((x): x is number => x != null)),
     condenseMs: median(rows.map((r) => r.stats.condenseMs).filter((x): x is number => x != null)),
   }
 
   const markdown = [
-    '| Model | GPU | n | Retrieval hit (single) | Answer acc (single) | Follow-up retrieval | Follow-up answer | TTFT p50 | Decode tok/s p50 | Prefill tok/s p50 | Total p50 | Retrieval p50 | Rerank p50 | Rewrite p50 |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    `| ${modelLabel} | ${adapterName ?? 'unknown'} | ${summary.n} | ${summary.retrieval} | ${summary.answer} | ${summary.followRetrieval} | ${summary.followAnswer} | ${fmt(summary.ttft, 0, ' ms')} | ${fmt(summary.decode, 1)} | ${fmt(summary.prefill, 0)} | ${fmt(summary.total, 0, ' ms')} | ${fmt(summary.retrievalMs, 0, ' ms')} | ${fmt(summary.rerankMs, 0, ' ms')} | ${fmt(summary.condenseMs, 0, ' ms')} |`,
+    '| Model | GPU | n | Retrieval hit (single) | Answer acc (single) | Follow-up retrieval | Follow-up answer | TTFT p50 | Decode tok/s p50 | Prefill tok/s p50 | Total p50 | Retrieval p50 | Rerank p50 | Focus p50 | Rewrite p50 |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| ${modelLabel} | ${adapterName ?? 'unknown'} | ${summary.n} | ${summary.retrieval} | ${summary.answer} | ${summary.followRetrieval} | ${summary.followAnswer} | ${fmt(summary.ttft, 0, ' ms')} | ${fmt(summary.decode, 1)} | ${fmt(summary.prefill, 0)} | ${fmt(summary.total, 0, ' ms')} | ${fmt(summary.retrievalMs, 0, ' ms')} | ${fmt(summary.rerankMs, 0, ' ms')} | ${fmt(summary.focusMs, 0, ' ms')} | ${fmt(summary.condenseMs, 0, ' ms')} |`,
   ].join('\n')
 
   async function copyMarkdown() {
@@ -278,6 +280,7 @@ export default function BenchPanel({
           <Stat label="total p50" value={fmt(summary.total, 0, ' ms')} />
           <Stat label="retrieval p50" value={fmt(summary.retrievalMs, 0, ' ms')} />
           <Stat label="rerank p50" value={fmt(summary.rerankMs, 0, ' ms')} />
+          <Stat label="focus p50" value={fmt(summary.focusMs, 0, ' ms')} />
           <Stat label="rewrite p50" value={fmt(summary.condenseMs, 0, ' ms')} />
         </div>
       ) : null}

@@ -38,6 +38,11 @@ export interface RankedChunk {
   score: number
   /** Cross-encoder relevance logit, present when this chunk was in the reranked pool. */
   rerankScore?: number
+  /**
+   * Offset into `text.trim()` of a sentence the excerpt must contain (the one
+   * the cross-encoder rated most relevant); the lexical window is kept as well.
+   */
+  focusStart?: number
   pageStart?: number
   pageEnd?: number
 }
@@ -71,6 +76,8 @@ export interface TurnStats extends GenerationStats {
   retrievalMs: number | null
   /** Cross-encoder pass over the fused candidates; null when it did not run. */
   rerankMs: number | null
+  /** Cross-encoder pass over the sentences of clipped excerpts; null when it did not run. */
+  focusMs: number | null
   /** Time spent rewriting a follow-up into a standalone question. */
   condenseMs: number | null
 }

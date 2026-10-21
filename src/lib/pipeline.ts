@@ -6,8 +6,9 @@ import {
   parseExtractCommand,
   parseExtractionResult,
 } from './extract'
+import { applyFocus, focusPairs } from './focus'
 import { buildPlainChatMessages, buildRagMessages } from './prompt'
-import { embeddingQueryFor, hybridRank, selectRagSources } from './rag'
+import { embeddingQueryFor, hybridRank, isOverviewQuery, selectRagSources } from './rag'
 import { mergeRerank, RERANK_POOL } from './rerank'
 import type {
   ChatMessage,
@@ -65,6 +66,7 @@ export async function answerQuestion(input: AskInput): Promise<AskResult> {
   let retrievalQuery: string | undefined
   let retrievalMs: number | null = null
   let rerankMs: number | null = null
+  let focusMs: number | null = null
   let condenseMs: number | null = null
 
   if (chunks.length > 0) {
@@ -116,6 +118,27 @@ export async function answerQuestion(input: AskInput): Promise<AskResult> {
 
     sources = extractFields ? ranked.slice(0, TOP_K_EXTRACT) : selectRagSources(query, chunks, ranked)
 
+    // Excerpts longer than the prompt budget get clipped. Let the cross-encoder
+    // name the sentence the excerpt must keep: the lexical window cannot see
+    // that "for hypertension" answers "for blood pressure". Overview questions
+    // keep the head of each chunk; extraction keeps the field-term window.
+    if (!extractFields && !isOverviewQuery(query)) {
+      const { pairs, spans } = focusPairs(query, sources)
+      if (pairs.length > 0) {
+        onActivity?.('Focusing excerpts…')
+        const t3 = performance.now()
+        try {
+          const scores = await worker.scorePairs(pairs)
+          if (scores.length === pairs.length) {
+            sources = applyFocus(sources, spans, scores)
+            focusMs = performance.now() - t3
+          }
+        } catch {
+          focusMs = null
+        }
+      }
+    }
+
     if (extractFields) {
       messages = buildExtractMessages(extractFields, sources)
       generateOptions = {
@@ -143,7 +166,7 @@ export async function answerQuestion(input: AskInput): Promise<AskResult> {
     options: generateOptions,
   })
 
-  const stats: TurnStats = { ...result.stats, modelId, retrievalMs, rerankMs, condenseMs }
+  const stats: TurnStats = { ...result.stats, modelId, retrievalMs, rerankMs, focusMs, condenseMs }
   const extraction =
     extractFields && !result.aborted
       ? parseExtractionResult(result.content, extractFields, sources.length)

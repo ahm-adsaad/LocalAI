@@ -5,6 +5,7 @@ import type {
   GenerationStats,
   InitProgress,
   RankedChunk,
+  RerankPair,
   ScoredChunkId,
   StoredChunk,
   WorkerEvent,
@@ -185,11 +186,15 @@ export class WorkerClient {
     return this.request<ScoredChunkId[]>({ type: 'search', query, topK })
   }
 
-  /** Cross-encoder scores for the first `pool` candidates, aligned with `ranked`. */
-  rerank(query: string, ranked: RankedChunk[], pool: number, onProgress?: ProgressHandler) {
-    const pairs = rerankPairs(query, ranked, pool)
+  /** Cross-encoder logits for arbitrary (query, text) pairs, in order. */
+  scorePairs(pairs: RerankPair[], onProgress?: ProgressHandler) {
     if (pairs.length === 0) return Promise.resolve<number[]>([])
     return this.request<number[]>({ type: 'rerank', pairs }, { onProgress })
+  }
+
+  /** Cross-encoder scores for the first `pool` candidates, aligned with `ranked`. */
+  rerank(query: string, ranked: RankedChunk[], pool: number, onProgress?: ProgressHandler) {
+    return this.scorePairs(rerankPairs(query, ranked, pool), onProgress)
   }
 
   generate(
